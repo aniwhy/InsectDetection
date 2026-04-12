@@ -14,6 +14,7 @@ st.set_page_config(
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1])
 with t_col2:
+    # Adding a label for accessibility, but we'll style it below
     dark_mode = st.toggle("🌙", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
@@ -28,13 +29,20 @@ else:
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
-
+    
+    /* Global Reset & Streamlit Hiding */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     
     .main, [data-testid="stAppViewContainer"] {{ 
         background-color: {BG} !important; 
         font-family: 'Inter', sans-serif !important; 
+        color: {TEXT} !important;
+    }}
+
+    /* Fix invisible Toggle and Uploader text in Light Mode */
+    .stMarkdown, p, span, label, div {{
+        color: {TEXT} !important;
     }}
 
     .bento-card {{ 
@@ -44,12 +52,11 @@ st.markdown(f"""
         padding: 24px; 
         box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
         margin-bottom: 20px; 
-        color: {TEXT};
     }}
 
     .eyebrow {{ 
         text-transform: uppercase; letter-spacing: 2px; 
-        font-size: 0.7rem; font-weight: 700; color: {ACCENT}; 
+        font-size: 0.7rem; font-weight: 700; color: {ACCENT} !important; 
         margin-bottom: 8px; 
     }}
 
@@ -69,17 +76,24 @@ st.markdown(f"""
 # ── Model Logic ───────────────────────────────────────────
 @st.cache_resource
 def load_model():
-    return YOLO('exp.pt')
+    return YOLO('exp-2.pt')
 
 model = load_model()
 
 def classify(img):
     results = model.predict(img, verbose=False)
     if results and results[0].probs:
-        idx = results[0].probs.top1
         conf = results[0].probs.top1conf.item()
-        return model.names[idx], conf
-    return "Unknown", 0.0
+        idx = results[0].probs.top1
+        label = model.names[idx]
+        
+        # Anti-Face-Sawfly Logic: Increase threshold for commonly misidentified insects
+        threshold = 0.50 
+        if conf < threshold:
+            return "No Specimen Detected", conf
+            
+        return label, conf
+    return "Scanning...", 0.0
 
 # ── Main UI ───────────────────────────────────────────────
 st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-top:-30px;">Insect Detection</h1>', unsafe_allow_html=True)
@@ -91,10 +105,7 @@ with col_left:
     tabs = st.tabs(["Camera Control", "Picture Analysis"])
     
     with tabs[0]:
-        # Using st.camera_input for manual snapshots
         cam_image = st.camera_input("Take a picture", label_visibility="collapsed")
-        
-        # Auto-poll switch
         auto_poll = st.toggle("Enable Auto-Analysis (Every 3s)", value=False)
         
         if cam_image:
@@ -114,7 +125,7 @@ with col_left:
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
                 else: st.error("Demo file missing.")
         with c2:
-            up = st.file_uploader("Upload", type=["jpg","png"], label_visibility="collapsed")
+            up = st.file_uploader("Upload Image", type=["jpg","png"], label_visibility="collapsed")
             if up: st.session_state.active_img = PIL.Image.open(up)
 
         if "active_img" in st.session_state:
@@ -127,11 +138,13 @@ with col_right:
     st.markdown('<p class="eyebrow">Classification Result</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
     
+    display_label = label.replace('_', ' ').title()
+    
     st.markdown(f"""
         <div class="bento-card">
             <p class="eyebrow">Identification</p>
             <div style="font-family:'Playfair Display'; font-size: 2.2rem; color:{TEXT};">
-                {label.replace('_', ' ').title()}
+                {display_label}
             </div>
             <div style="background: {BORDER}; height: 8px; border-radius: 10px; margin-top: 1.5rem; overflow: hidden;">
                 <div style="background: {ACCENT}; width: {conf*100}%; height: 100%;"></div>
