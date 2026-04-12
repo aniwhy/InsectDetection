@@ -3,6 +3,8 @@ from ultralytics import YOLO
 import PIL.Image
 import os
 import time
+import smtplib
+from email.message import EmailMessage
 
 # ── Page Configuration ────────────────────────────────────
 st.set_page_config (
@@ -24,10 +26,10 @@ if "cam_enabled" not in st.session_state:
 # ── Color Palettes (Rich Green Enhancements) ──────────────
 if st.session_state.dark_mode:
     BG_GRADIENT = "linear-gradient(135deg, #0A0F0A 0%, #121412 100%)"
-    CARD_BG = "rgba(20, 30, 20, 0.7)" # Dark Green Tint
+    CARD_BG = "rgba(20, 30, 20, 0.7)" 
     TEXT = "#E0E4E0"
     TEXT_DIM = "#8AA38D"
-    ACCENT = "#4CAF50" # Vibrant Forest Green
+    ACCENT = "#4CAF50" 
     BORDER = "#2D362E"
     SURFACE = "#1A1D1A"
 else:
@@ -35,7 +37,7 @@ else:
     CARD_BG = "rgba(255, 255, 255, 0.6)"
     TEXT = "#1B2E1B"
     TEXT_DIM = "#4A5D4C"
-    ACCENT = "#2E8B57" # Sea Green
+    ACCENT = "#2E8B57" 
     BORDER = "#C2D9C5"
     SURFACE = "#F0F2F0"
 
@@ -52,13 +54,11 @@ st.markdown(f"""
         transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
 
-    /* Centered Header Styling */
     .header-container {{
         text-align: center;
         padding: 40px 0 20px 0;
     }}
 
-    /* Bento Card Glow & Green Glass */
     .bento-card {{ 
         background: {CARD_BG}; 
         backdrop-filter: blur(12px);
@@ -85,7 +85,6 @@ st.markdown(f"""
         margin-bottom: 12px;
     }}
 
-    /* Green Buttons */
     .stButton > button {{
         border-radius: 14px !important;
         background-color: {SURFACE} !important;
@@ -100,7 +99,6 @@ st.markdown(f"""
         color: {ACCENT} !important;
     }}
 
-    /* Text Color Normalization */
     .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p, div[data-testid="stRadio"] label p {{
         color: {TEXT} !important;
     }}
@@ -115,7 +113,6 @@ st.markdown(f"""
         border: 1px solid {ACCENT}44;
     }}
 
-    /* Tab Customization */
     [data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; }}
     [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; font-weight: 600; }}
     [data-baseweb="tab"][aria-selected="true"] {{ color: {ACCENT} !important; border-bottom-color: {ACCENT} !important; }}
@@ -138,6 +135,34 @@ def add_to_inventory(label):
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
         st.toast(f"Logged: {label}", icon="🐞")
 
+def send_email_alert(species, count, recipient):
+    """Sends an automated email alert using provided credentials."""
+    sender_email = "aniyuva745@gmail.com"
+    sender_password = "xkoz kvqr xtjr atio" # Your app password
+    
+    msg = EmailMessage()
+    msg.set_content(f"""
+    INVASIVE SPECIES ALERT
+    ----------------------
+    System ID: TSA-2026-HQ
+    Species Identified: {species}
+    Current Population Count: {count}
+    Status: Threshold Exceeded
+    """)
+    
+    msg['Subject'] = f"⚠️ ALERT: {species} Threshold Reached"
+    msg['From'] = sender_email
+    msg['To'] = recipient
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(sender_email, sender_password)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        st.error(f"Mail System Error: {e}")
+        return False
+
 # ── Header Section ────────────────────────────────────────
 st.markdown(f"""
     <div class="header-container">
@@ -148,7 +173,6 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Floating Theme Toggle
 t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
 with t_col3:
     if st.button("☀️" if st.session_state.dark_mode else "🌙", help="Switch Theme"):
@@ -188,9 +212,9 @@ with col_left:
     
     with tabs[1]:
         st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
-        upload_mode = st.radio("Processing Engine", ["Single Specimen", "Batch Processing"], horizontal=True)
+        upload_mode = st.radio("Processing Module", ["Single Insect", "Batch Processing"], horizontal=True)
         
-        if upload_mode == "Single Specimen":
+        if upload_mode == "Single Insect":
             up = st.file_uploader("Select Image", type=["jpg","png"], key="single_up")
             if up:
                 img = PIL.Image.open(up)
@@ -244,4 +268,13 @@ with col_right:
         threshold = st.slider("Population Alert Threshold", 1, 50, 5)
         if st.button("Reset Session Data", use_container_width=True):
             st.session_state.inventory = {}
+            st.session_state.emails_sent = []
             st.rerun()
+
+# ── Email Automation Trigger ────────────────────────────────
+for species, count in st.session_state.inventory.items():
+    if count >= threshold and species not in st.session_state.emails_sent:
+        with st.spinner(f"Sending alert for {species}..."):
+            if send_email_alert(species, count, target_email):
+                st.session_state.emails_sent.append(species)
+                st.success(f"📧 Alert Sent: {species} population is high.")
