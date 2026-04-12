@@ -14,9 +14,13 @@ st.set_page_config(
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1.5])
 with t_col2:
+    # Manual override for the toggle text to keep it consistent
     dark_mode = st.toggle("Light/Dark Mode", value=True)
 
-# ── Dynamic Color Palette ─────────────────────────────────
+# ── Earthy Color Palette ──────────────────────────────────
+# Added: EARTH_BROWN for the toggle and deep accents
+EARTH_BROWN = "#3B2F2F" 
+
 if dark_mode:
     BG, CARD, TEXT = "#121412", "#1C1F1C", "#E0E4E0"
     TEXT_DIM, ACCENT, BORDER = "#8AA38D", "#4CAF50", "#2D332D"
@@ -24,7 +28,7 @@ else:
     BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
     TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides (Killing the Red) ──────────────────────
+# ── CSS Overrides (The Earthy Overhaul) ──────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
@@ -34,51 +38,47 @@ st.markdown(f"""
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
 
-    /* ── FIXING THE INVISIBLE TEXT ── */
-    /* Target toggle and uploader labels specifically */
-    label, [data-testid="stWidgetLabel"] p {{
+    /* Fix Toggle Label Visibility - Consistent Color */
+    [data-testid="stWidgetLabel"] p {{
         color: {TEXT} !important;
         font-weight: 600 !important;
+        font-size: 0.9rem !important;
     }}
 
-    /* ── REMOVING THE RED (Tabs & UI) ── */
-    /* This targets the tab highlight and active tab text */
-    div[data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; }}
+    /* ── EARTHY TOGGLE FIX ── */
+    div[role="switch"] {{
+        background-color: {EARTH_BROWN} !important; /* Dark Brown Track */
+        border: 1px solid {BORDER} !important;
+    }}
+    div[role="switch"][aria-checked="true"] {{
+        background-color: {ACCENT} !important; /* Moss Green when active */
+    }}
+    div[role="switch"] > div {{
+        background-color: white !important; /* Clean White Handle */
+    }}
+
+    /* ── REMOVING THE RED (Tabs Fix) ── */
     div[data-baseweb="tab-highlight"] {{ background-color: {ACCENT} !important; }}
     button[data-baseweb="tab"] {{ color: {TEXT_DIM} !important; border: none !important; }}
     button[aria-selected="true"] {{ color: {TEXT} !important; font-weight: 700 !important; }}
 
-    /* ── UPLOAD BOX FIX ── */
+    /* ── UPLOAD BOX EARTHY STYLING ── */
     [data-testid="stFileUploader"] {{
         background-color: {CARD} !important;
-        border: 2px dashed {ACCENT} !important;
+        border: 2px dashed {EARTH_BROWN} !important;
         border-radius: 15px !important;
     }}
-    
-    /* 'Browse files' button styling */
     [data-testid="stFileUploader"] button {{
-        background-color: {ACCENT} !important;
+        background-color: {EARTH_BROWN} !important;
         color: white !important;
         border: none !important;
     }}
-
-    /* Drag and drop text color */
+    /* Dropzone text */
     [data-testid="stFileUploadDropzone"] div div span {{
         color: {TEXT} !important;
     }}
 
-    /* ── TOGGLE FIX (Custom Tracks) ── */
-    div[role="switch"] {{
-        background-color: {BORDER} !important;
-    }}
-    div[role="switch"][aria-checked="true"] {{
-        background-color: {ACCENT} !important;
-    }}
-    div[role="switch"] > div {{
-        background-color: {TEXT} !important;
-    }}
-
-    /* ── UI BENTO ELEMENTS ── */
+    /* UI BENTO ELEMENTS */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
@@ -119,7 +119,6 @@ def classify(img):
         idx = results[0].probs.top1
         label = model.names[idx]
         
-        # Keep threshold high to avoid "face detection"
         if conf < 0.55:
             return "No Specimen Detected", conf
         return label, conf
@@ -132,8 +131,6 @@ col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
-    
-    # Using a container to apply our CSS tab fix
     tabs = st.tabs(["Camera Control", "Manual Upload"])
     
     with tabs[0]:
