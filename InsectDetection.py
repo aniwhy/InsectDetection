@@ -3,9 +3,6 @@ from ultralytics import YOLO
 import PIL.Image
 import os
 import time
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 # ── Page Configuration ────────────────────────────────────
 st.set_page_config(
@@ -21,8 +18,8 @@ if "emails_sent" not in st.session_state:
     st.session_state.emails_sent = []
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
-if "reset_confirmed" not in st.session_state:
-    st.session_state.reset_confirmed = False
+if "cam_enabled" not in st.session_state:
+    st.session_state.cam_enabled = True
 
 # ── Color Palettes ────────────────────────────────────────
 DARK_PALETTE = {
@@ -49,7 +46,7 @@ BG, CARD, SURFACE, TEXT, TEXT_DIM, ACCENT, BORDER = (
     colors["BG"], colors["CARD"], colors["SURFACE"], colors["TEXT"], colors["TEXT_DIM"], colors["ACCENT"], colors["BORDER"]
 )
 
-# ── CSS Overrides ──────────────────────────────────────────
+# ── CSS Overrides (Fixing Visibility) ──────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
@@ -60,10 +57,16 @@ st.markdown(f"""
         font-family: 'Inter', sans-serif !important;
     }}
 
-    @keyframes pulse {{
-        0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 {ACCENT}77; }}
-        70% {{ transform: scale(1); box-shadow: 0 0 0 6px {ACCENT}00; }}
-        100% {{ transform: scale(0.95); box-shadow: 0 0 0 0 {ACCENT}00; }}
+    /* === CRITICAL VISIBILITY FIXES === */
+    /* Forces labels, toggles, and radio text to be visible in Light Mode */
+    .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p {{
+        color: {TEXT} !important;
+        font-weight: 500 !important;
+    }}
+    
+    /* Fixes visibility for radio buttons and toggles */
+    div[data-testid="stRadio"] label p {{
+        color: {TEXT} !important;
     }}
 
     .bento-card {{ 
@@ -73,12 +76,6 @@ st.markdown(f"""
         padding: 24px; 
         margin-bottom: 20px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }}
-    .bento-card:hover {{
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-        border-color: {ACCENT}55;
     }}
 
     .eyebrow {{ 
@@ -92,7 +89,9 @@ st.markdown(f"""
 
     .stButton > button {{
         border-radius: 12px !important;
-        transition: all 0.2s ease !important;
+        background-color: {SURFACE} !important;
+        color: {TEXT} !important;
+        border: 1px solid {BORDER} !important;
     }}
     
     .live-badge {{
@@ -104,33 +103,14 @@ st.markdown(f"""
         border-radius: 20px;
         border: 1px solid {ACCENT}33;
     }}
-    .dot {{
-        height: 8px; width: 8px;
-        background-color: {ACCENT};
-        border-radius: 50%;
-        animation: pulse 2s infinite;
-    }}
 
     [data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; gap: 20px !important; }}
-    [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; padding: 10px 0px !important; }}
+    [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; }}
     [data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT} !important; border-bottom-color: {ACCENT} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
 # ── Logic Functions ───────────────────────────────────────
-def send_pest_control_email(species, count, receiver_email, threshold):
-    return True # Simulated
-
-def add_to_inventory(label, target_email, threshold):
-    invalid_labels = ["No Specimen Detected", "Scanning...", "Awaiting Data", "Scanning"]
-    if label not in invalid_labels:
-        st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
-        count = st.session_state.inventory[label]
-        if count >= threshold and label not in st.session_state.emails_sent:
-            send_pest_control_email(label, count, target_email, threshold)
-            st.session_state.emails_sent.append(label)
-            st.toast(f"Email Alert Sent for {label}!", icon="✅")
-
 @st.cache_resource
 def load_model():
     return YOLO('yolov8n.pt') 
@@ -138,8 +118,14 @@ def load_model():
 model = load_model()
 
 def classify(img):
-    # Simulated prediction logic
+    # Simulated prediction
     return "Common Beetle", 0.94 
+
+def add_to_inventory(label):
+    invalid_labels = ["No Specimen Detected", "Scanning...", "Awaiting Data"]
+    if label not in invalid_labels:
+        st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
+        st.toast(f"Logged: {label}", icon="🐞")
 
 # ── Header ────────────────────────────────────────────────
 h_col1, h_col2 = st.columns([6, 1])
@@ -148,8 +134,7 @@ with h_col1:
     st.markdown(f'<p style="color:{ACCENT}; font-size:0.75rem; font-weight:700; letter-spacing:1px; margin-top:-5px;">TSA 2026 | TEAM 2043-901</p>', unsafe_allow_html=True)
 
 with h_col2:
-    theme_label = "☀️" if st.session_state.dark_mode else "🌙"
-    if st.button(theme_label, use_container_width=True):
+    if st.button("☀️" if st.session_state.dark_mode else "🌙", use_container_width=True):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
 
@@ -158,18 +143,30 @@ col_left, col_right = st.columns([1.6, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["Camera Control", "Manual Upload"])
+    
+    # SYSTEM CONTROLS (Camera/Sync)
+    ctrl_col1, ctrl_col2 = st.columns(2)
+    with ctrl_col1:
+        st.session_state.cam_enabled = st.toggle("Enable Camera Feed", value=st.session_state.cam_enabled)
+    with ctrl_col2:
+        sync_active = st.toggle("Auto-Sync (3s)", value=False)
+
+    tabs = st.tabs(["Optical Input", "Manual/Batch Archive"])
     
     with tabs[0]:
-        st.markdown(f"""<div class="live-badge"><div class="dot"></div><span style="color:{ACCENT}; font-size:0.7rem; font-weight:700;">SYSTEM LIVE</span></div>""", unsafe_allow_html=True)
-        st.write("")
-        cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
-        if cam_image:
-            img = PIL.Image.open(cam_image)
-            label, conf = classify(img)
-            st.session_state.insect_res = (label, conf)
-            # Add to inventory using default or current UI threshold values
-            add_to_inventory(label, "agiridhar41@gmail.com", 5)
+        if st.session_state.cam_enabled:
+            st.markdown(f"""<div class="live-badge"><span style="color:{ACCENT}; font-size:0.7rem; font-weight:700;">SYSTEM LIVE</span></div>""", unsafe_allow_html=True)
+            cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
+            if cam_image:
+                img = PIL.Image.open(cam_image)
+                label, conf = classify(img)
+                st.session_state.insect_res = (label, conf)
+                add_to_inventory(label)
+                if sync_active:
+                    time.sleep(3)
+                    st.rerun()
+        else:
+            st.info("Camera disabled. Toggle switch above to activate.")
     
     with tabs[1]:
         st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
@@ -183,23 +180,16 @@ with col_left:
                 if st.button("Analyze Specimen", use_container_width=True):
                     label, conf = classify(img)
                     st.session_state.insect_res = (label, conf)
-                    add_to_inventory(label, "agiridhar41@gmail.com", 5)
-        
+                    add_to_inventory(label)
         else:
             ups = st.file_uploader("Upload Multiple Images", type=["jpg","png"], accept_multiple_files=True, key="batch_up")
-            if ups:
-                st.info(f"{len(ups)} images ready for batch processing.")
-                if st.button("Start Batch Analysis", use_container_width=True):
-                    progress_bar = st.progress(0)
-                    for i, up in enumerate(ups):
-                        img = PIL.Image.open(up)
-                        label, conf = classify(img)
-                        add_to_inventory(label, "agiridhar41@gmail.com", 5)
-                        # Set the last one as the active display
-                        st.session_state.insect_res = (label, conf)
-                        progress_bar.progress((i + 1) / len(ups))
-                    st.success("Batch processing complete.")
-                    
+            if ups and st.button("Start Batch Analysis", use_container_width=True):
+                prog = st.progress(0)
+                for i, up in enumerate(ups):
+                    label, conf = classify(PIL.Image.open(up))
+                    add_to_inventory(label)
+                    st.session_state.insect_res = (label, conf)
+                    prog.progress((i + 1) / len(ups))
         st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
@@ -214,7 +204,6 @@ with col_right:
         
         if st.button("Clear Data", use_container_width=True):
             st.session_state.inventory = {}
-            st.session_state.emails_sent = []
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
