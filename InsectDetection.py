@@ -22,25 +22,26 @@ if "emails_sent" not in st.session_state:
 
 ALERT_THRESHOLD = 5
 
-def send_pest_control_email(species, count):
-    sender = "marcuss0517@gmail.com"
-    receiver = "aniyuva745@gmail.com"
-    password = "ntom wfqh kxfi etgp" 
+def send_pest_control_email(species, count, receiver_email):
+    # Updated Credentials
+    sender = "aniyuva745@gmail.com"
+    password = "crei kema pjwg djwl" 
     
-    subject = f"ALERT: Invasive Species Threshold Reached ({species.title()})"
+    subject = f"TSA ALERT: Invasive Species Threshold Reached ({species.title()})"
     body = f"""
     The Automated Insect Population Counter has detected a population influx.
     
     Species identified: {species.replace('_', ' ').title()}
     Total count: {count}
-    Location: Seven Springs, PA Region
+    Location: Seven Springs, PA Region (TSA 2026)
     
     Current Threshold: {ALERT_THRESHOLD}
+    Notification routed to: {receiver_email}
     """
     
     msg = MIMEMultipart()
     msg["From"] = sender
-    msg["To"] = receiver
+    msg["To"] = receiver_email
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain"))
 
@@ -51,18 +52,20 @@ def send_pest_control_email(species, count):
         server.send_message(msg)
         server.quit()
         return True
-    except Exception as e:
+    except Exception:
         return False
 
-def add_to_inventory(label):
+def add_to_inventory(label, target_email):
     invalid_labels = ["No Specimen Detected", "Scanning...", "Awaiting Data", "Scanning"]
     if label not in invalid_labels:
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
         count = st.session_state.inventory[label]
+        
+        # Trigger alert if threshold hit and email not yet sent for this session
         if count >= ALERT_THRESHOLD and label not in st.session_state.emails_sent:
-            if send_pest_control_email(label, count):
+            if send_pest_control_email(label, count, target_email):
                 st.session_state.emails_sent.append(label)
-                st.toast(f"📧 Alert Email Sent for {label.title()}!", icon="✅")
+                st.toast(f"📧 Alert Sent to {target_email}!", icon="✅")
 
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1.5])
@@ -91,6 +94,7 @@ st.markdown(f"""
     button[aria-selected="true"] {{ color: {TEXT} !important; font-weight: 700 !important; }}
     .bento-card {{ background: {CARD}; border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; }}
     .eyebrow {{ text-transform: uppercase; letter-spacing: 2px; font-size: 0.7rem; font-weight: 700; color: {ACCENT} !important; margin-bottom: 8px; }}
+    input {{ background-color: {BG} !important; color: {TEXT} !important; border: 1px solid {BORDER} !important; border-radius: 8px !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -116,29 +120,38 @@ st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-top:
 
 col_left, col_right = st.columns([1.5, 1])
 
+# Determine Alert Destination
+with col_right:
+    st.markdown('<p class="eyebrow">Agency Routing</p>', unsafe_allow_html=True)
+    with st.container():
+        st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
+        is_custom = st.toggle("Custom Judge Email", value=False)
+        if is_custom:
+            target_email = st.text_input("Recipient Email", placeholder="judge@example.com")
+        else:
+            target_email = "akshath.giridhar@gmail.com"
+            st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.8rem;'>Default: {target_email}</p>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
     tabs = st.tabs(["Camera Control", "Manual Upload"])
     
     with tabs[0]:
-        # NEW: Toggle to enable/disable camera
         cam_active = st.toggle("Live Camera Feed", value=True)
-        
         if cam_active:
             cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
             auto_poll = st.toggle("Enable Auto-Analysis Loop", value=False)
-            
             if cam_image:
                 img = PIL.Image.open(cam_image)
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
-                add_to_inventory(label)
-                
+                add_to_inventory(label, target_email)
             if auto_poll:
                 time.sleep(3)
                 st.rerun()
         else:
-            st.info("Camera is currently disabled. Toggle 'Live Camera Feed' to start monitoring.")
+            st.info("Camera is disabled.")
     
     with tabs[1]:
         up = st.file_uploader("Upload Image", type=["jpg","png"], label_visibility="collapsed")
@@ -148,7 +161,7 @@ with col_left:
             if st.button("Run Intelligence Engine"):
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
-                add_to_inventory(label)
+                add_to_inventory(label, target_email)
 
 with col_right:
     st.markdown('<p class="eyebrow">Result Engine</p>', unsafe_allow_html=True)
@@ -159,15 +172,11 @@ with col_right:
     st.markdown(f"""
         <div class="bento-card">
             <p class="eyebrow">Identification</p>
-            <div style="font-family:'Playfair Display'; font-size: 2.2rem; color:{TEXT};">
-                {display_label}
-            </div>
+            <div style="font-family:'Playfair Display'; font-size: 2.2rem; color:{TEXT};">{display_label}</div>
             <div style="background: {BORDER}; height: 8px; border-radius: 10px; margin-top: 1.5rem; overflow: hidden;">
                 <div style="background: {ACCENT}; width: {conf*100}%; height: 100%;"></div>
             </div>
-            <p style="color: {TEXT_DIM}; font-size: 0.8rem; margin-top: 10px; font-weight: 600;">
-                Confidence: {conf:.2%}
-            </p>
+            <p style="color: {TEXT_DIM}; font-size: 0.8rem; margin-top: 10px; font-weight: 600;">Confidence: {conf:.2%}</p>
         </div>
     """, unsafe_allow_html=True)
 
