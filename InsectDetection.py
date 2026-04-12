@@ -5,7 +5,7 @@ import os
 import time
 
 # ── Page Configuration ────────────────────────────────────
-st.set_page_config
+st.set_page_config (
     page_title="Insect Detection | TSA 2026",
     layout="wide",
     initial_sidebar_state="collapsed"
