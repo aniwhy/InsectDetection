@@ -21,14 +21,14 @@ if "dark_mode" not in st.session_state:
 if "cam_enabled" not in st.session_state:
     st.session_state.cam_enabled = True
 
-# ── Color Palettes ────────────────────────────────────────
+# ── Color Palettes (Restoring Green Accents) ───────────────
 DARK_PALETTE = {
     "BG": "#121412",
     "CARD": "#26221C",
     "SURFACE": "#1A1916",
     "TEXT": "#E0E4E0",
     "TEXT_DIM": "#8AA38D",
-    "ACCENT": "#4CAF50",
+    "ACCENT": "#4CAF50", # Forest Green
     "BORDER": "#3D362E"
 }
 LIGHT_PALETTE = {
@@ -36,8 +36,8 @@ LIGHT_PALETTE = {
     "CARD": "#F5E6D3",
     "SURFACE": "#EEEDE8",
     "TEXT": "#1B2E1B",
-    "TEXT_DIM": "#5D574F",
-    "ACCENT": "#2E8B57",
+    "TEXT_DIM": "#4A5D4C", # Sage Green Dim
+    "ACCENT": "#2E8B57", # Sea Green
     "BORDER": "#D9C5B2"
 }
 
@@ -46,27 +46,27 @@ BG, CARD, SURFACE, TEXT, TEXT_DIM, ACCENT, BORDER = (
     colors["BG"], colors["CARD"], colors["SURFACE"], colors["TEXT"], colors["TEXT_DIM"], colors["ACCENT"], colors["BORDER"]
 )
 
-# ── CSS Overrides (Fixing Visibility) ──────────────────────
+# ── CSS Overrides (With Smooth Transitions) ────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
     
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
+    
+    /* === SMOOTH THEME ANIMATION === */
+    .main, [data-testid="stAppViewContainer"], .bento-card, .stButton > button, div[data-baseweb="tab-list"] {{
+        transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease !important;
+    }}
+
     .main, [data-testid="stAppViewContainer"] {{ 
         background-color: {BG} !important; 
         font-family: 'Inter', sans-serif !important;
     }}
 
-    /* === CRITICAL VISIBILITY FIXES === */
-    /* Forces labels, toggles, and radio text to be visible in Light Mode */
-    .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p {{
+    /* Visibility Fixes */
+    .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p, div[data-testid="stRadio"] label p {{
         color: {TEXT} !important;
         font-weight: 500 !important;
-    }}
-    
-    /* Fixes visibility for radio buttons and toggles */
-    div[data-testid="stRadio"] label p {{
-        color: {TEXT} !important;
     }}
 
     .bento-card {{ 
@@ -98,15 +98,20 @@ st.markdown(f"""
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: {ACCENT}15;
+        background: {ACCENT}22;
         padding: 4px 12px;
         border-radius: 20px;
-        border: 1px solid {ACCENT}33;
+        border: 1px solid {ACCENT}44;
     }}
 
     [data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; gap: 20px !important; }}
     [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; }}
     [data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT} !important; border-bottom-color: {ACCENT} !important; }}
+    
+    /* Progress bar color */
+    div[data-testid="stProgress"] > div > div > div {{
+        background-color: {ACCENT} !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -118,7 +123,6 @@ def load_model():
 model = load_model()
 
 def classify(img):
-    # Simulated prediction
     return "Common Beetle", 0.94 
 
 def add_to_inventory(label):
@@ -144,7 +148,6 @@ col_left, col_right = st.columns([1.6, 1])
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
     
-    # SYSTEM CONTROLS (Camera/Sync)
     ctrl_col1, ctrl_col2 = st.columns(2)
     with ctrl_col1:
         st.session_state.cam_enabled = st.toggle("Enable Camera Feed", value=st.session_state.cam_enabled)
