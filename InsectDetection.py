@@ -36,13 +36,13 @@ DARK_PALETTE = {
     "BORDER": "#3D362E"
 }
 LIGHT_PALETTE = {
-    "BG": "#F9FAF8",
-    "CARD": "#FFFFFF",
-    "SURFACE": "#F0F2ED",
-    "TEXT": "#1A2D1A",
-    "TEXT_DIM": "#6B7366",
-    "ACCENT": "#27A94F",
-    "BORDER": "#E0E5DC"
+    "BG": "#F4F7F4",
+    "CARD": "#F5E6D3",
+    "SURFACE": "#EEEDE8",
+    "TEXT": "#1B2E1B",
+    "TEXT_DIM": "#5D574F",
+    "ACCENT": "#2E8B57",
+    "BORDER": "#D9C5B2"
 }
 
 # Get colors ONCE per session
@@ -79,17 +79,6 @@ st.markdown(f"""
         background-color: {BG} !important; 
         font-family: 'Inter', sans-serif !important;
         animation: fadeIn 0.4s ease-in;
-        color: {TEXT} !important;
-    }}
-    
-    /* Force text color on all elements */
-    * {{
-        color: {TEXT} !important;
-    }}
-    
-    /* Override for dim text */
-    .text-dim {{
-        color: {TEXT_DIM} !important;
     }}
     
     /* === CARDS === */
@@ -156,19 +145,9 @@ st.markdown(f"""
     /* === BUTTONS === */
     button {{
         transition: all 0.2s ease !important;
-        color: #FFFFFF !important;
     }}
     button:active {{
         transform: scale(0.97);
-    }}
-    
-    /* === INPUT TEXT === */
-    input[type="text"], textarea {{
-        color: {TEXT} !important;
-    }}
-    
-    input[type="text"]::placeholder, textarea::placeholder {{
-        color: {TEXT_DIM} !important;
     }}
     
     /* === TABS - REMOVE RED UNDERLINE === */
@@ -356,7 +335,7 @@ with col_left:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                if st.button("Process All", use_container_width=True):
+                if st.button("⚡ Process All", use_container_width=True):
                     progress_bar = st.progress(0)
                     results_list = []
                     
