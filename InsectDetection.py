@@ -12,9 +12,9 @@ st.set_page_config(
 )
 
 # ── Theme State & Toggle ──────────────────────────────────
-t_col1, t_col2 = st.columns([8, 1])
+t_col1, t_col2 = st.columns([8, 1.2])
 with t_col2:
-    dark_mode = st.toggle("🌙", value=True)
+    dark_mode = st.toggle("🌙 Mode", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
 if dark_mode:
@@ -24,7 +24,7 @@ else:
     BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
     TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides (Deep Integration) ──────────────────────
+# ── CSS Overrides (Aggressive UI Fix) ─────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
@@ -32,14 +32,10 @@ st.markdown(f"""
     /* Global Reset */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
-    
-    .main, [data-testid="stAppViewContainer"] {{ 
-        background-color: {BG} !important; 
-        font-family: 'Inter', sans-serif !important; 
-    }}
+    .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
 
-    /* Force all text colors */
-    .stMarkdown, p, span, label {{ color: {TEXT} !important; }}
+    /* Force all base text */
+    .stMarkdown, p, span, label, div {{ color: {TEXT} !important; }}
 
     /* Custom Bento Card */
     .bento-card {{ 
@@ -47,7 +43,7 @@ st.markdown(f"""
         border: 1px solid {BORDER}; 
         border-radius: 24px; 
         padding: 24px; 
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
+        box-shadow: 0 8px 32px rgba(0,0,0,0.05); 
         margin-bottom: 20px; 
     }}
 
@@ -57,37 +53,53 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
-    /* Fixing the Toggle Visuals */
-    div[data-testid="stWidgetLabel"] p {{ color: {TEXT} !important; }}
-    div[role="switch"] {{ background-color: {BORDER} !important; }}
+    /* ── TOGGLE FIX ── */
+    div[role="switch"] {{ background-color: {BORDER} !important; border: 1px solid {BORDER}; }}
     div[role="switch"][aria-checked="true"] {{ background-color: {ACCENT} !important; }}
+    /* Small circle inside toggle */
+    div[role="switch"] > div {{ background-color: {TEXT} !important; }}
 
-    /* Making the Upload Box Blend In */
+    /* ── UPLOAD BOX FIX ── */
     section[data-testid="stFileUploader"] {{
         background-color: {CARD} !important;
-        border: 1px dashed {BORDER} !important;
-        border-radius: 15px !important;
-        padding: 10px !important;
+        border: 2px dashed {ACCENT} !important;
+        border-radius: 20px !important;
+        padding: 1.5rem !important;
     }}
-    section[data-testid="stFileUploader"] div div {{ color: {TEXT_DIM} !important; }}
-    
-    /* Fix Button Color */
+    /* "Browse files" button inside the uploader */
+    section[data-testid="stFileUploader"] button {{
+        background-color: {ACCENT} !important;
+        color: white !important;
+        border-radius: 8px !important;
+        border: none !important;
+    }}
+    /* The "Drag and drop" text */
+    [data-testid="stFileUploadDropzone"] div div {{
+        color: {TEXT} !important;
+    }}
+
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ACCENT}; }}
+    .stTabs [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; }}
+    .stTabs [aria-selected="true"] {{ color: {TEXT} !important; font-weight: 600; }}
+
+    /* Primary Analysis Buttons */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
         border-radius: 12px !important; 
-        border: none !important; 
-        width: 100%;
+        height: 3rem;
         font-weight: 600 !important;
+        transition: 0.3s;
     }}
-    
-    .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ACCENT}; }}
+    div.stButton > button:hover {{ transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }}
 </style>
 """, unsafe_allow_html=True)
 
 # ── Model Logic ───────────────────────────────────────────
 @st.cache_resource
 def load_model():
+    # Loading your updated exp-2.pt
     return YOLO('exp-2.pt')
 
 model = load_model()
@@ -99,24 +111,25 @@ def classify(img):
         idx = results[0].probs.top1
         label = model.names[idx]
         
-        # Threshold logic to prevent "face-sawfly" issues
+        # Threshold to avoid face-to-insect misidentification
         if conf < 0.50:
             return "No Specimen Detected", conf
         return label, conf
     return "Scanning...", 0.0
 
 # ── Main UI ───────────────────────────────────────────────
-st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-top:-30px;">Insect Detection</h1>', unsafe_allow_html=True)
+st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-top:-40px;">Insect Detection</h1>', unsafe_allow_html=True)
 
 col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
-    st.markdown('<p class="eyebrow">Input Feed</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["Camera Control", "Picture Analysis"])
+    st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
+    tabs = st.tabs(["Capture Control", "Manual Upload"])
     
     with tabs[0]:
-        cam_image = st.camera_input("Take a picture", label_visibility="collapsed")
-        auto_poll = st.toggle("Enable Auto-Analysis (Every 3s)", value=False)
+        cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
+        st.markdown("<div style='margin-top:10px;'></div>", unsafe_allow_html=True)
+        auto_poll = st.toggle("Enable Auto-Analysis Loop", value=False)
         
         if cam_image:
             img = PIL.Image.open(cam_image)
@@ -128,25 +141,16 @@ with col_left:
             st.rerun()
     
     with tabs[1]:
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("Load Demo Insect"):
-                if os.path.exists("demo_image.jpg"):
-                    st.session_state.active_img = PIL.Image.open("demo_image.jpg")
-                else: st.error("Demo file missing.")
-        with c2:
-            # The CSS above now makes this blend into the background
-            up = st.file_uploader("Upload Image", type=["jpg","png"], label_visibility="collapsed")
-            if up: st.session_state.active_img = PIL.Image.open(up)
-
-        if "active_img" in st.session_state:
-            st.image(st.session_state.active_img, use_container_width=True)
-            if st.button("Analyze Upload"):
-                label, conf = classify(st.session_state.active_img)
+        up = st.file_uploader("Upload Image", type=["jpg","png"], label_visibility="collapsed")
+        if up:
+            img = PIL.Image.open(up)
+            st.image(img, use_container_width=True)
+            if st.button("Run Intelligence Engine"):
+                label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
 
 with col_right:
-    st.markdown('<p class="eyebrow">Classification Result</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Result Engine</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
     
     display_label = label.replace('_', ' ').title()
