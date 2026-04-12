@@ -14,21 +14,27 @@ st.set_page_config(
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1.5])
 with t_col2:
-    # Manual override for the toggle text to keep it consistent
     dark_mode = st.toggle("Light/Dark Mode", value=True)
 
-# ── Earthy Color Palette ──────────────────────────────────
-# Added: EARTH_BROWN for the toggle and deep accents
-EARTH_BROWN = "#3B2F2F" 
+# ── Dynamic Earthy Color Palette ──────────────────────────
+EARTH_BROWN = "#3B2F2F" # Dark Espresso/Bark
 
 if dark_mode:
-    BG, CARD, TEXT = "#121412", "#1C1F1C", "#E0E4E0"
-    TEXT_DIM, ACCENT, BORDER = "#8AA38D", "#4CAF50", "#2D332D"
+    BG = "#121412"      # Deep Forest Black
+    CARD = "#26221C"    # Dark Earth Brown
+    TEXT = "#E0E4E0"    # Off-white
+    TEXT_DIM = "#8AA38D"
+    ACCENT = "#4CAF50"  # Moss Green
+    BORDER = "#3D362E"  # Muted Brown Border
 else:
-    BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
-    TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
+    BG = "#F4F7F4"      # Light Mint Grey
+    CARD = "#F5E6D3"    # Warm Beige / Parchment
+    TEXT = "#1B2E1B"    # Deep Spruce
+    TEXT_DIM = "#5D574F" # Muted Soil
+    ACCENT = "#2E8B57"  # Forest Green
+    BORDER = "#D9C5B2"  # Sand Border
 
-# ── CSS Overrides (The Earthy Overhaul) ──────────────────
+# ── CSS Overrides ─────────────────────────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
@@ -38,31 +44,30 @@ st.markdown(f"""
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
 
-    /* Fix Toggle Label Visibility - Consistent Color */
-    [data-testid="stWidgetLabel"] p {{
+    /* ── FIXING THE TEXT ── */
+    label, [data-testid="stWidgetLabel"] p {{
         color: {TEXT} !important;
         font-weight: 600 !important;
-        font-size: 0.9rem !important;
     }}
 
     /* ── EARTHY TOGGLE FIX ── */
     div[role="switch"] {{
-        background-color: {EARTH_BROWN} !important; /* Dark Brown Track */
+        background-color: {EARTH_BROWN} !important;
         border: 1px solid {BORDER} !important;
     }}
     div[role="switch"][aria-checked="true"] {{
-        background-color: {ACCENT} !important; /* Moss Green when active */
+        background-color: {ACCENT} !important;
     }}
     div[role="switch"] > div {{
-        background-color: white !important; /* Clean White Handle */
+        background-color: white !important;
     }}
 
-    /* ── REMOVING THE RED (Tabs Fix) ── */
+    /* ── TABS (Removing Red) ── */
     div[data-baseweb="tab-highlight"] {{ background-color: {ACCENT} !important; }}
     button[data-baseweb="tab"] {{ color: {TEXT_DIM} !important; border: none !important; }}
     button[aria-selected="true"] {{ color: {TEXT} !important; font-weight: 700 !important; }}
 
-    /* ── UPLOAD BOX EARTHY STYLING ── */
+    /* ── UPLOAD BOX ── */
     [data-testid="stFileUploader"] {{
         background-color: {CARD} !important;
         border: 2px dashed {EARTH_BROWN} !important;
@@ -71,20 +76,18 @@ st.markdown(f"""
     [data-testid="stFileUploader"] button {{
         background-color: {EARTH_BROWN} !important;
         color: white !important;
-        border: none !important;
     }}
-    /* Dropzone text */
     [data-testid="stFileUploadDropzone"] div div span {{
         color: {TEXT} !important;
     }}
 
-    /* UI BENTO ELEMENTS */
+    /* ── UI BENTO ELEMENTS ── */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
         border-radius: 24px; 
         padding: 24px; 
-        box-shadow: 0 8px 32px rgba(0,0,0,0.05); 
+        box-shadow: 0 8px 32px rgba(0,0,0,0.08); 
         margin-bottom: 20px; 
     }}
 
@@ -94,7 +97,7 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
-    /* Main Action Buttons */
+    /* Action Buttons */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
@@ -119,6 +122,7 @@ def classify(img):
         idx = results[0].probs.top1
         label = model.names[idx]
         
+        # High threshold to filter out "Face as Sawfly"
         if conf < 0.55:
             return "No Specimen Detected", conf
         return label, conf
