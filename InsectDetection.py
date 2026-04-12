@@ -21,61 +21,54 @@ if "dark_mode" not in st.session_state:
 if "cam_enabled" not in st.session_state:
     st.session_state.cam_enabled = True
 
-# ── Color Palettes (Restoring Green Accents) ───────────────
-DARK_PALETTE = {
-    "BG": "#121412",
-    "CARD": "#26221C",
-    "SURFACE": "#1A1916",
-    "TEXT": "#E0E4E0",
-    "TEXT_DIM": "#8AA38D",
-    "ACCENT": "#4CAF50", # Forest Green
-    "BORDER": "#3D362E"
-}
-LIGHT_PALETTE = {
-    "BG": "#F4F7F4",
-    "CARD": "#F5E6D3",
-    "SURFACE": "#EEEDE8",
-    "TEXT": "#1B2E1B",
-    "TEXT_DIM": "#4A5D4C", # Sage Green Dim
-    "ACCENT": "#2E8B57", # Sea Green
-    "BORDER": "#D9C5B2"
-}
+# ── Color Palettes (With Gradient Support) ────────────────
+if st.session_state.dark_mode:
+    BG_GRADIENT = "linear-gradient(135deg, #121412 0%, #1A1C1A 100%)"
+    CARD_BG = "rgba(38, 34, 28, 0.9)"
+    TEXT = "#E0E4E0"
+    TEXT_DIM = "#8AA38D"
+    ACCENT = "#4CAF50"
+    BORDER = "#3D362E"
+    SURFACE = "#1A1916"
+else:
+    BG_GRADIENT = "linear-gradient(135deg, #F4F7F4 0%, #E8EFE8 100%)"
+    CARD_BG = "rgba(245, 230, 211, 0.7)"
+    TEXT = "#1B2E1B"
+    TEXT_DIM = "#4A5D4C"
+    ACCENT = "#2E8B57"
+    BORDER = "#D9C5B2"
+    SURFACE = "#EEEDE8"
 
-colors = DARK_PALETTE if st.session_state.dark_mode else LIGHT_PALETTE
-BG, CARD, SURFACE, TEXT, TEXT_DIM, ACCENT, BORDER = (
-    colors["BG"], colors["CARD"], colors["SURFACE"], colors["TEXT"], colors["TEXT_DIM"], colors["ACCENT"], colors["BORDER"]
-)
-
-# ── CSS Overrides (With Smooth Transitions) ────────────────
+# ── CSS Overrides (Gradient & Animation) ──────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
     
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     
-    /* === SMOOTH THEME ANIMATION === */
-    .main, [data-testid="stAppViewContainer"], .bento-card, .stButton > button, div[data-baseweb="tab-list"] {{
-        transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease !important;
-    }}
-
+    /* === SMOOTH THEME & GRADIENT === */
     .main, [data-testid="stAppViewContainer"] {{ 
-        background-color: {BG} !important; 
+        background: {BG_GRADIENT} !important; 
         font-family: 'Inter', sans-serif !important;
+        transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
 
-    /* Visibility Fixes */
-    .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p, div[data-testid="stRadio"] label p {{
-        color: {TEXT} !important;
-        font-weight: 500 !important;
-    }}
-
+    /* Bento Card Gradient & Glass Effect */
     .bento-card {{ 
-        background: {CARD}; 
+        background: {CARD_BG}; 
+        backdrop-filter: blur(10px);
         border: 1px solid {BORDER}; 
         border-radius: 20px; 
         padding: 24px; 
         margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+    }}
+    
+    .bento-card:hover {{
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+        border-color: {ACCENT}77;
     }}
 
     .eyebrow {{ 
@@ -92,8 +85,19 @@ st.markdown(f"""
         background-color: {SURFACE} !important;
         color: {TEXT} !important;
         border: 1px solid {BORDER} !important;
+        transition: all 0.3s ease !important;
     }}
-    
+
+    .stButton > button:hover {{
+        border-color: {ACCENT} !important;
+        color: {ACCENT} !important;
+    }}
+
+    /* Visibility Fixes */
+    .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p, div[data-testid="stRadio"] label p {{
+        color: {TEXT} !important;
+    }}
+
     .live-badge {{
         display: inline-flex;
         align-items: center;
@@ -104,14 +108,9 @@ st.markdown(f"""
         border: 1px solid {ACCENT}44;
     }}
 
-    [data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; gap: 20px !important; }}
+    [data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; }}
     [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; }}
     [data-baseweb="tab"][aria-selected="true"] {{ color: {TEXT} !important; border-bottom-color: {ACCENT} !important; }}
-    
-    /* Progress bar color */
-    div[data-testid="stProgress"] > div > div > div {{
-        background-color: {ACCENT} !important;
-    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -126,8 +125,7 @@ def classify(img):
     return "Common Beetle", 0.94 
 
 def add_to_inventory(label):
-    invalid_labels = ["No Specimen Detected", "Scanning...", "Awaiting Data"]
-    if label not in invalid_labels:
+    if label not in ["No Specimen Detected", "Scanning...", "Awaiting Data"]:
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
         st.toast(f"Logged: {label}", icon="🐞")
 
