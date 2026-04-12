@@ -58,7 +58,6 @@ def add_to_inventory(label, target_email, threshold):
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
         count = st.session_state.inventory[label]
         
-        # Trigger alert if threshold hit
         if count >= threshold and label not in st.session_state.emails_sent:
             if send_pest_control_email(label, count, target_email, threshold):
                 st.session_state.emails_sent.append(label)
@@ -76,7 +75,7 @@ if dark_mode:
 else:
     BG, CARD, TEXT, TEXT_DIM, ACCENT, BORDER = "#F4F7F4", "#F5E6D3", "#1B2E1B", "#5D574F", "#2E8B57", "#D9C5B2"
 
-# ── CSS Overrides ─────────────────────────────────────────
+# ── CSS Overrides (Updated for Slider Theme) ──────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
@@ -84,8 +83,19 @@ st.markdown(f"""
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
     label, [data-testid="stWidgetLabel"] p {{ color: {TEXT} !important; font-weight: 600 !important; }}
+    
+    /* Toggle Switch Styling */
     div[role="switch"] {{ background-color: {EARTH_BROWN} !important; border: 1px solid {BORDER} !important; }}
     div[role="switch"][aria-checked="true"] {{ background-color: {ACCENT} !important; }}
+    
+    /* Slider (Threshold Bar) Styling */
+    div[data-baseweb="slider"] > div {{ background-color: transparent !important; }}
+    div[data-testid="stTickBar"] > div {{ color: {TEXT_DIM} !important; }}
+    /* Slider Track */
+    div[data-baseweb="slider"] [role="slider"] {{ background-color: {ACCENT} !important; border: 2px solid {BG} !important; }}
+    /* Filled track portion */
+    div[data-baseweb="slider"] > div > div > div:nth-child(1) {{ background: {ACCENT} !important; }}
+    
     div[data-baseweb="tab-highlight"] {{ background-color: {ACCENT} !important; }}
     button[data-baseweb="tab"] {{ color: {TEXT_DIM} !important; border: none !important; }}
     button[aria-selected="true"] {{ color: {TEXT} !important; font-weight: 700 !important; }}
@@ -122,7 +132,6 @@ with col_right:
     with st.container():
         st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
         
-        # Recipient Selection
         is_custom = st.toggle("Custom Judge Email", value=False)
         if is_custom:
             target_email = st.text_input("Recipient Email", placeholder="judge@example.com")
@@ -132,9 +141,9 @@ with col_right:
         
         st.markdown("<hr style='opacity:0.2; margin: 15px 0;'>", unsafe_allow_html=True)
         
-        # Threshold Calibration
+        # Themed Threshold Bar
         current_threshold = st.slider("Alert Threshold", min_value=1, max_value=50, value=5)
-        st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.75rem;'>System will alert agency after {current_threshold} detections.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.75rem;'>Trigger point: {current_threshold} specimens.</p>", unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -191,7 +200,6 @@ with col_right:
         st.markdown(f"<p style='color:{TEXT_DIM};'>No specimens logged.</p>", unsafe_allow_html=True)
     else:
         for species, count in st.session_state.inventory.items():
-            # Highlight red if threshold hit
             is_over = count >= current_threshold
             color = "#ff4b4b" if is_over else TEXT
             st.markdown(f"""
