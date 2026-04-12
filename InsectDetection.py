@@ -14,7 +14,6 @@ st.set_page_config(
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1.5])
 with t_col2:
-    # Adding a label here so we can target it with CSS
     dark_mode = st.toggle("Light/Dark Mode", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
@@ -25,7 +24,7 @@ else:
     BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
     TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides (Deep Browser Targeting) ────────────────
+# ── CSS Overrides (Killing the Red) ──────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
@@ -36,11 +35,18 @@ st.markdown(f"""
     .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
 
     /* ── FIXING THE INVISIBLE TEXT ── */
-    /* This targets the labels for toggles and uploaders directly */
-    .stText, .stMarkdown p, label, .stToggle label p {{
+    /* Target toggle and uploader labels specifically */
+    label, [data-testid="stWidgetLabel"] p {{
         color: {TEXT} !important;
         font-weight: 600 !important;
     }}
+
+    /* ── REMOVING THE RED (Tabs & UI) ── */
+    /* This targets the tab highlight and active tab text */
+    div[data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; }}
+    div[data-baseweb="tab-highlight"] {{ background-color: {ACCENT} !important; }}
+    button[data-baseweb="tab"] {{ color: {TEXT_DIM} !important; border: none !important; }}
+    button[aria-selected="true"] {{ color: {TEXT} !important; font-weight: 700 !important; }}
 
     /* ── UPLOAD BOX FIX ── */
     [data-testid="stFileUploader"] {{
@@ -49,31 +55,30 @@ st.markdown(f"""
         border-radius: 15px !important;
     }}
     
-    /* Force the 'Browse files' button to stay dark/visible */
+    /* 'Browse files' button styling */
     [data-testid="stFileUploader"] button {{
         background-color: {ACCENT} !important;
         color: white !important;
+        border: none !important;
     }}
 
-    /* Target the 'Drag and drop' small text that ghosts out */
+    /* Drag and drop text color */
     [data-testid="stFileUploadDropzone"] div div span {{
         color: {TEXT} !important;
     }}
 
-    /* ── TOGGLE FIX ── */
-    /* The track */
+    /* ── TOGGLE FIX (Custom Tracks) ── */
     div[role="switch"] {{
-        background-color: "#121412" !important;
-    }}
-    div[role="switch"][aria-checked="true"] {{
         background-color: {BORDER} !important;
     }}
-    /* The moving circle (handle) */
-    div[role="switch"] > div {{
+    div[role="switch"][aria-checked="true"] {{
         background-color: {ACCENT} !important;
     }}
+    div[role="switch"] > div {{
+        background-color: {TEXT} !important;
+    }}
 
-    /* ── UI ELEMENTS ── */
+    /* ── UI BENTO ELEMENTS ── */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
@@ -89,10 +94,13 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
+    /* Main Action Buttons */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
         border-radius: 12px !important; 
+        border: none !important;
+        font-weight: 600 !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -111,7 +119,7 @@ def classify(img):
         idx = results[0].probs.top1
         label = model.names[idx]
         
-        # High threshold to prevent misidentifying humans
+        # Keep threshold high to avoid "face detection"
         if conf < 0.55:
             return "No Specimen Detected", conf
         return label, conf
@@ -124,6 +132,8 @@ col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
+    
+    # Using a container to apply our CSS tab fix
     tabs = st.tabs(["Camera Control", "Manual Upload"])
     
     with tabs[0]:
