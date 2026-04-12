@@ -3,132 +3,177 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfigurati
 import cv2
 from ultralytics import YOLO
 import PIL.Image
-import numpy as np
-import time
-import av
-import threading
 import os
 
 # ── Page Configuration ────────────────────────────────────
 st.set_page_config(
-    page_title="Communify | Nature Intelligence",
+    page_title="Insect Detection Engine",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# ── Theme State ───────────────────────────────────────────
-if 'dark_mode' not in st.session_state: st.session_state.dark_mode = True
-dark = st.session_state.dark_mode
+# ── Natural Color Palette ────────────────────────────────
+# Using Forest Green, Moss, and Earth tones
+BG       = "#F4F7F4"  # Very light mint/cream
+CARD     = "#FFFFFF"  # White
+TEXT     = "#1B2E1B"  # Deep Forest Green
+TEXT_DIM = "#556B2F"  # Dark Olive Green
+ACCENT   = "#2E8B57"  # Sea Green
+BORDER   = "#D1DBCC"  # Pale Sage
 
-# ── Communify Design Tokens ───────────────────────────────
-if dark:
-    BG, CARD, TEXT = "#1C1B18", "#2A2824", "#F5F3F0"
-    TEXT_DIM, ACCENT, BORDER = "#B8A584", "#D4A574", "#4A4844"
-else:
-    BG, CARD, TEXT = "#FAF9F6", "#FFFFFF", "#2C2416"
-    TEXT_DIM, ACCENT, BORDER = "#6B5D47", "#8B6F47", "#E8E0D6"
-
-# ── CSS Framework ─────────────────────────────────────────
+# ── Custom CSS ────────────────────────────────────────────
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@600;700&display=swap');
-.main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
-.nav-bar {{ display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 0; margin-bottom: 2rem; border-bottom: 1px solid {BORDER}; }}
-.bento-card {{ background: {CARD}; border: 1px solid {BORDER}; border-radius: 28px; padding: 28px; box-shadow: 0 12px 40px rgba(0,0,0,0.04); margin-bottom: 24px; }}
-.hero-title {{ font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 700; color: {TEXT}; line-height: 1.1; margin-bottom: 0.75rem; }}
-.eyebrow {{ text-transform: uppercase; letter-spacing: 3px; font-size: 0.7rem; font-weight: 700; color: {ACCENT}; margin-bottom: 12px; }}
-.metric-val {{ font-family: 'Playfair Display', serif; font-size: 2.5rem; color: {TEXT}; font-weight: 600; }}
-div.stButton > button {{ background-color: {ACCENT} !important; color: white !important; border-radius: 14px !important; width: 100%; border: none !important; font-weight: 600 !important; }}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
+
+.main, [data-testid="stAppViewContainer"] {{ 
+    background-color: {BG} !important; 
+    font-family: 'Inter', sans-serif !important; 
+}}
+
+/* Bento Card Style */
+.bento-card {{ 
+    background: {CARD}; 
+    border: 1px solid {BORDER}; 
+    border-radius: 24px; 
+    padding: 24px; 
+    box-shadow: 0 8px 32px rgba(0,0,0,0.03); 
+    margin-bottom: 20px; 
+}}
+
+.hero-title {{ 
+    font-family: 'Playfair Display', serif; 
+    font-size: 2.8rem; 
+    color: {TEXT}; 
+    margin-bottom: 0.5rem; 
+}}
+
+.eyebrow {{ 
+    text-transform: uppercase; 
+    letter-spacing: 2px; 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    color: {ACCENT}; 
+    margin-bottom: 10px; 
+}}
+
+.metric-val {{ 
+    font-family: 'Playfair Display', serif; 
+    font-size: 2.2rem; 
+    color: {TEXT}; 
+}}
+
+/* Button Customization */
+div.stButton > button {{ 
+    background-color: {ACCENT} !important; 
+    color: white !important; 
+    border-radius: 12px !important; 
+    border: none !important; 
+    font-weight: 600 !important;
+    transition: 0.3s;
+}}
+
+div.stButton > button:hover {{
+    background-color: {TEXT_DIM} !important;
+    transform: translateY(-2px);
+}}
+
 #MainMenu, footer, [data-testid="stHeader"] {{display: none;}}
 </style>
 """, unsafe_allow_html=True)
 
 # ── Model Loading ─────────────────────────────────────────
 @st.cache_resource
-def load_classification_model():
+def load_model():
     return YOLO('exp-2.pt')
 
-model = load_classification_model()
+model = load_model()
 
-def get_classification(img_input):
-    results = model.predict(img_input, verbose=False)
+def run_prediction(img):
+    results = model.predict(img, verbose=False)
     if results and results[0].probs:
-        top_idx = results[0].probs.top1
+        idx = results[0].probs.top1
         conf = results[0].probs.top1conf.item()
-        label = model.names[top_idx]
-        return label, conf
-    return "No Subject", 0.0
+        return model.names[idx], conf
+    return "No Data", 0.0
 
-# ── UI Header ─────────────────────────────────────────────
+# ── Header ────────────────────────────────────────────────
 st.markdown(f"""
-    <div class="nav-bar">
-        <div style="font-family:'Playfair Display'; font-size: 1.6rem; font-weight:700; color:{TEXT}">
-            <span style="color:{ACCENT}">♥</span> Communify
+    <div style="padding: 1rem 0; border-bottom: 1px solid {BORDER}; margin-bottom: 2rem; display: flex; align-items: center; gap: 10px;">
+        <div style="background: {ACCENT}; width: 12px; height: 12px; border-radius: 50%;"></div>
+        <div style="font-family:'Playfair Display'; font-size: 1.4rem; font-weight:700; color:{TEXT}">
+            Insect Detection
         </div>
-        <div style="color:{TEXT_DIM}; font-size: 0.75rem; font-weight:700; letter-spacing:2px">INTELLIGENCE HUB</div>
     </div>
 """, unsafe_allow_html=True)
 
-# ── Main Content ──────────────────────────────────────────
-col_feed, col_data = st.columns([1.8, 1])
+# ── Layout ────────────────────────────────────────────────
+col_left, col_right = st.columns([1.5, 1])
 
-with col_feed:
-    st.markdown(f'<p class="eyebrow">Input Source</p>', unsafe_allow_html=True)
-    src_tabs = st.tabs(["🖼 Static Analysis", "📷 Live Stream"])
+with col_left:
+    st.markdown('<p class="eyebrow">Visual Data Feed</p>', unsafe_allow_html=True)
     
-    with src_tabs[0]:
-        sub1, sub2 = st.columns(2)
-        with sub1:
-            if st.button("Load Demo Image"):
-                # Updated filename to demo_image.jpg
+    tabs = st.tabs(["🖼 Static Analysis", "📷 Live Stream"])
+    
+    with tabs[0]:
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("Load Demo Insect"):
                 if os.path.exists("demo_image.jpg"):
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
                 else:
-                    st.error("File 'demo_image.jpg' not found in root directory.")
+                    st.error("demo_image.jpg not found.")
         
-        with sub2:
-            uploaded_file = st.file_uploader("Upload", type=["jpg", "png", "jpeg"], label_visibility="collapsed")
-            if uploaded_file:
-                st.session_state.active_img = PIL.Image.open(uploaded_file)
+        with c2:
+            up = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+            if up:
+                st.session_state.active_img = PIL.Image.open(up)
 
         if "active_img" in st.session_state:
+            st.markdown(f'<div style="border: 4px solid {BORDER}; border-radius: 20px; overflow: hidden;">', unsafe_allow_html=True)
             st.image(st.session_state.active_img, use_container_width=True)
-            if st.button("Run Intelligence Engine"):
-                label, conf = get_classification(st.session_state.active_img)
-                st.session_state.analysis_result = (label, conf)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            if st.button("Classify Specimen"):
+                label, conf = run_prediction(st.session_state.active_img)
+                st.session_state.res = (label, conf)
     
-    with src_tabs[1]:
+    with tabs[1]:
         webrtc_streamer(
-            key="communify-live",
+            key="insect-cam",
             rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
             media_stream_constraints={"video": True, "audio": False},
         )
+        st.caption("Whole-image classification active for video stream.")
 
-with col_data:
-    st.markdown(f'<p class="eyebrow">Classification Result</p>', unsafe_allow_html=True)
-    res_label, res_conf = st.session_state.get("analysis_result", ("Awaiting Input", 0.0))
+with col_right:
+    st.markdown('<p class="eyebrow">Analysis Dashboard</p>', unsafe_allow_html=True)
+    
+    label, conf = st.session_state.get("res", ("Awaiting Input", 0.0))
     
     st.markdown(f"""
         <div class="bento-card">
-            <p class="eyebrow">Identified Category</p>
-            <div class="metric-val">{res_label.replace('_', ' ').title()}</div>
-            <div style="margin-top: 24px; background: {BORDER}; height: 8px; border-radius: 10px; overflow: hidden;">
-                <div style="background: {ACCENT}; width: {res_conf*100}%; height: 100%; border-radius: 10px;"></div>
+            <p class="eyebrow">Primary Classification</p>
+            <div class="metric-val">{label.replace('_', ' ').title()}</div>
+            <div style="background: {BORDER}; height: 8px; border-radius: 10px; margin-top: 20px; overflow: hidden;">
+                <div style="background: {ACCENT}; width: {conf*100}%; height: 100%;"></div>
             </div>
-            <p style="color: {TEXT_DIM}; font-size: 0.85rem; margin-top: 12px; font-weight: 600;">
-                Confidence: {res_conf:.2%}
+            <p style="color: {TEXT_DIM}; font-size: 0.85rem; margin-top: 10px; font-weight: 600;">
+                Confidence Index: {conf:.2%}
             </p>
         </div>
     """, unsafe_allow_html=True)
 
     st.markdown(f"""
-        <div class="bento-card" style="background: {ACCENT}; border: none;">
-            <p class="eyebrow" style="color: {BG};">Communify Hub</p>
-            <p style="color: {BG}; font-size: 0.9rem; margin-bottom: 20px;">
-                Identified nature resource. Connect with Pittsburgh conservation groups.
+        <div class="bento-card" style="background: {TEXT}; color: white; border: none;">
+            <p class="eyebrow" style="color: {BORDER};">Taxonomy Info</p>
+            <p style="font-size: 0.9rem; opacity: 0.9; line-height: 1.5;">
+                This engine uses a YOLOv8-Cls architecture trained specifically for regional insect identification.
             </p>
-            <div style="background: {BG}; color: {ACCENT}; padding: 12px; border-radius: 12px; text-align: center; font-weight: 700; font-size: 0.8rem;">
-                VIEW LOCAL ORGANIZATIONS
+            <hr style="border-color: {TEXT_DIM}; margin: 15px 0;">
+            <div style="font-size: 0.75rem; color: {BORDER};">
+                MODEL: exp-2.pt<br>
+                FORMAT: CLASSIFICATION
             </div>
         </div>
     """, unsafe_allow_html=True)
