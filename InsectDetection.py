@@ -6,51 +6,39 @@ import os
 
 # ── Page Configuration ────────────────────────────────────
 st.set_page_config(
-    page_title="Insect Intelligence",
+    page_title="Insect Detection | TSA 2026",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# ── Theme Toggle (Sidebar) ────────────────────────────────
-with st.sidebar:
-    st.markdown("### UI Settings")
-    dark_mode = st.toggle("Dark Mode", value=True)
-    st.divider()
-    st.markdown("🔍 **Model:** YOLO11s-cls")
-    st.markdown("📂 **Weights:** `exp.pt`平衡")
+# ── Theme State & Toggle ──────────────────────────────────
+# Using a simple columns layout at the top for the toggle
+t_col1, t_col2 = st.columns([8, 1])
+with t_col2:
+    dark_mode = st.toggle("🌙", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
 if dark_mode:
-    BG       = "#121412"  # Deep Charcoal Green
-    CARD     = "#1C1F1C"  # Dark Moss Card
-    TEXT     = "#E0E4E0"  # Off-white Sage
-    TEXT_DIM = "#8AA38D"  # Muted Leaf
-    ACCENT   = "#4CAF50"  # Vibrant Nature Green
-    BORDER   = "#2D332D"  # Dark Border
+    BG, CARD, TEXT = "#121412", "#1C1F1C", "#E0E4E0"
+    TEXT_DIM, ACCENT, BORDER = "#8AA38D", "#4CAF50", "#2D332D"
 else:
-    BG       = "#F4F7F4"  # Light Mint Cream
-    CARD     = "#FFFFFF"  # White
-    TEXT     = "#1B2E1B"  # Deep Forest
-    TEXT_DIM = "#556B2F"  # Olive
-    ACCENT   = "#2E8B57"  # Sea Green
-    BORDER   = "#D1DBCC"  # Pale Sage
+    BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
+    TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides (Removing Red & Adding Theme) ───────────
+# ── CSS Overrides ─────────────────────────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
 
-    /* Remove Streamlit Red Accents */
+    /* Remove Streamlit Header/Red Line */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     
-    /* Base Theme */
     .main, [data-testid="stAppViewContainer"] {{ 
         background-color: {BG} !important; 
         font-family: 'Inter', sans-serif !important; 
     }}
 
-    /* Bento Cards */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
@@ -67,7 +55,6 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
-    /* UI Components */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
@@ -77,19 +64,16 @@ st.markdown(f"""
         font-weight: 600 !important;
     }}
     
-    /* Tabs styling */
-    .stTabs [data-baseweb="tab-list"] {{ background-color: transparent; }}
-    .stTabs [data-baseweb="tab"] {{ color: {TEXT_DIM}; }}
     .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ACCENT}; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Model Loading ─────────────────────────────────────────
+# ── Model Logic ───────────────────────────────────────────
 @st.cache_resource
-def load_insect_model():
+def load_model():
     return YOLO('exp.pt')
 
-model = load_insect_model()
+model = load_model()
 
 def classify(img):
     results = model.predict(img, verbose=False)
@@ -100,13 +84,13 @@ def classify(img):
     return "Unknown", 0.0
 
 # ── Main UI ───────────────────────────────────────────────
-st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-bottom:2rem;">Insect Detection</h1>', unsafe_allow_html=True)
+st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-top:-30px;">Insect Detection</h1>', unsafe_allow_html=True)
 
 col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Input Feed</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["🖼 Upload / Demo", "📷 Live Stream"])
+    tabs = st.tabs(["🖼 Static Analysis", "📷 Live Stream"])
     
     with tabs[0]:
         c1, c2 = st.columns(2)
@@ -114,8 +98,7 @@ with col_left:
             if st.button("Load Demo Specimen"):
                 if os.path.exists("demo_image.jpg"):
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
-                else:
-                    st.error("demo_image.jpg missing.")
+                else: st.error("demo_image.jpg missing.")
         with c2:
             up = st.file_uploader("Upload", type=["jpg","png"], label_visibility="collapsed")
             if up: st.session_state.active_img = PIL.Image.open(up)
@@ -152,11 +135,17 @@ with col_right:
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-        <div class="bento-card" style="background: {ACCENT}; border: none;">
-            <p class="eyebrow" style="color: rgba(255,255,255,0.7);">System Status</p>
-            <p style="color: white; font-size: 0.9rem;">
-                Neural engine active. YOLO11 architecture optimized for low-latency classification.
-            </p>
-        </div>
-    """, unsafe_allow_html=True)
+# ── Footer Project Details ────────────────────────────────
+st.markdown(f"""
+    <div style="margin-top: 4rem; padding: 2rem 0; border-top: 1px solid {BORDER}; text-align: center;">
+        <p style="color: {TEXT_DIM}; font-size: 0.8rem; letter-spacing: 1px; margin: 0;">
+            TSA 2026 | SEVEN SPRINGS, PA
+        </p>
+        <p style="color: {TEXT}; font-weight: 600; font-size: 0.9rem; margin-top: 5px;">
+            TEAM ID: 2043-901
+        </p>
+        <p style="color: {TEXT_DIM}; font-size: 0.75rem;">
+            IDs: 2043-022, 2043-084, 2043-085
+        </p>
+    </div>
+""", unsafe_allow_html=True)
