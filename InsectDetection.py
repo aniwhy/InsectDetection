@@ -170,10 +170,7 @@ st.markdown(f"""
         color: {TEXT} !important;
     }}
     
-    /* === THRESHOLD ALERT === */
-    .alert-threshold {{
-        animation: glow 1.5s ease-in-out infinite;
-    }}
+
     
 </style>
 """, unsafe_allow_html=True)
@@ -270,7 +267,8 @@ with col_right:
             st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.8rem;'>Default: {target_email}</p>", unsafe_allow_html=True)
         
         st.markdown("<hr style='opacity:0.2; margin: 15px 0;'>", unsafe_allow_html=True)
-        current_threshold = st.slider("Alert Threshold", min_value=1, max_value=50, value=5)
+        st.markdown(f"<p style='color: {TEXT_DIM}; font-size:0.8rem; margin: 10px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;'>Alert Threshold</p>", unsafe_allow_html=True)
+        current_threshold = st.slider("label", min_value=1, max_value=50, value=5, label_visibility="collapsed")
         
         st.markdown("<hr style='opacity:0.2; margin: 15px 0;'>", unsafe_allow_html=True)
         
@@ -405,10 +403,10 @@ with col_right:
         
         for species, count in st.session_state.inventory.items():
             is_over = count >= current_threshold
-            color = "#ff4b4b" if is_over else TEXT
-            alert_class = "alert-threshold" if is_over else ""
-            st.markdown(f"""<div style="display:flex; justify-content:space-between; color:{color}; padding: 6px 0;" class="{alert_class}">
-                <span>{species.replace('_',' ').title()}</span><span style="font-weight:700;">{count}</span></div>""", unsafe_allow_html=True)
+            color = ACCENT if is_over else TEXT
+            bg_style = f"background-color: {ACCENT}15; border-radius: 8px; padding: 8px; margin-bottom: 6px;" if is_over else "padding: 8px 0; margin-bottom: 6px;"
+            st.markdown(f"""<div style="display:flex; justify-content:space-between; align-items:center; color:{color}; {bg_style}">
+                <span style="font-weight: {'600' if is_over else '500'};">{species.replace('_',' ').title()}</span><span style="font-weight:700; font-size:1.05rem;">{count}</span></div>""", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 st.markdown(f'<p style="text-align:center; color:{TEXT_DIM}; font-size:0.7rem;">TSA 2026 | TEAM 2043-901</p>', unsafe_allow_html=True)
