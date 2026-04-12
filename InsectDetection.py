@@ -5,7 +5,7 @@ import os
 import time
 
 # ── Page Configuration ────────────────────────────────────
-st.set_page_config(
+st.set_page_config
     page_title="Insect Detection | TSA 2026",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -143,7 +143,7 @@ st.markdown(f"""
     <div class="header-container">
         <h1 style="font-family:'Playfair Display'; color:{TEXT}; font-size: 4rem; margin:0;">Insect Detection</h1>
         <p style="color:{ACCENT}; font-size:0.9rem; font-weight:700; letter-spacing:3px; margin-top:5px;">
-            TSA 2026 &nbsp; | &nbsp; BIOMETRIC SURVEILLANCE &nbsp; | &nbsp; TEAM 2043-901
+            TSA 2026 &nbsp; | &nbsp; ENGINEERING DESIGN &nbsp; | &nbsp; TEAM 2043-901
         </p>
     </div>
 """, unsafe_allow_html=True)
