@@ -20,7 +20,6 @@ if "inventory" not in st.session_state:
 if "emails_sent" not in st.session_state:
     st.session_state.emails_sent = []
 
-# TESTING THRESHOLD: Changed from 20 to 5
 ALERT_THRESHOLD = 5
 
 def send_pest_control_email(species, count):
@@ -37,8 +36,6 @@ def send_pest_control_email(species, count):
     Location: Seven Springs, PA Region
     
     Current Threshold: {ALERT_THRESHOLD}
-    This threshold indicates a 'crossing of the threshold of normalcy' as defined 
-    in the Engineering Design Documentation. Please survey the local area.
     """
     
     msg = MIMEMultipart()
@@ -58,12 +55,9 @@ def send_pest_control_email(species, count):
         return False
 
 def add_to_inventory(label):
-    # Filter out non-insect labels
     invalid_labels = ["No Specimen Detected", "Scanning...", "Awaiting Data", "Scanning"]
     if label not in invalid_labels:
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
-        
-        # Check for Email Trigger
         count = st.session_state.inventory[label]
         if count >= ALERT_THRESHOLD and label not in st.session_state.emails_sent:
             if send_pest_control_email(label, count):
@@ -127,16 +121,24 @@ with col_left:
     tabs = st.tabs(["Camera Control", "Manual Upload"])
     
     with tabs[0]:
-        cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
-        auto_poll = st.toggle("Enable Auto-Analysis Loop", value=False)
-        if cam_image:
-            img = PIL.Image.open(cam_image)
-            label, conf = classify(img)
-            st.session_state.insect_res = (label, conf)
-            add_to_inventory(label)
-        if auto_poll:
-            time.sleep(3)
-            st.rerun()
+        # NEW: Toggle to enable/disable camera
+        cam_active = st.toggle("Live Camera Feed", value=True)
+        
+        if cam_active:
+            cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
+            auto_poll = st.toggle("Enable Auto-Analysis Loop", value=False)
+            
+            if cam_image:
+                img = PIL.Image.open(cam_image)
+                label, conf = classify(img)
+                st.session_state.insect_res = (label, conf)
+                add_to_inventory(label)
+                
+            if auto_poll:
+                time.sleep(3)
+                st.rerun()
+        else:
+            st.info("Camera is currently disabled. Toggle 'Live Camera Feed' to start monitoring.")
     
     with tabs[1]:
         up = st.file_uploader("Upload Image", type=["jpg","png"], label_visibility="collapsed")
@@ -169,14 +171,10 @@ with col_right:
         </div>
     """, unsafe_allow_html=True)
 
-    # Live Inventory Tracking Card
-    st.markdown(f"""
-        <div class="bento-card">
-            <p class="eyebrow">Population Inventory</p>
-    """, unsafe_allow_html=True)
-    
+    # Inventory Card
+    st.markdown(f'<div class="bento-card"><p class="eyebrow">Population Inventory</p>', unsafe_allow_html=True)
     if not st.session_state.inventory:
-        st.markdown(f"<p style='color:{TEXT_DIM};'>No specimens logged in current session.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:{TEXT_DIM};'>No specimens logged.</p>", unsafe_allow_html=True)
     else:
         for species, count in st.session_state.inventory.items():
             color = "#ff4b4b" if count >= ALERT_THRESHOLD else TEXT
@@ -191,7 +189,6 @@ with col_right:
 # ── Footer ──
 st.markdown(f"""
     <div style="margin-top: 2rem; padding: 2rem 0; border-top: 1px solid {BORDER}; text-align: center;">
-        <p style="color: {TEXT_DIM}; font-size: 0.8rem; letter-spacing: 1px; margin: 0;">TSA 2026 | SEVEN SPRINGS, PA</p>
-        <p style="color: {TEXT}; font-weight: 600; font-size: 0.9rem; margin-top: 5px;">TEAM ID: 2043-901</p>
+        <p style="color: {TEXT_DIM}; font-size: 0.8rem; letter-spacing: 1px; margin: 0;">TSA 2026 | TEAM ID: 2043-901</p>
     </div>
 """, unsafe_allow_html=True)
