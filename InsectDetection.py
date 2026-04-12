@@ -23,6 +23,16 @@ if "dark_mode" not in st.session_state:
 if "cam_enabled" not in st.session_state:
     st.session_state.cam_enabled = True
 
+# ── Species Logic (BAU-Insectv2 Integration) ──────────────
+# Defining which species from the dataset are invasive/pests
+INVASIVE_PESTS = [
+    "Rice Leafroller", 
+    "Brown Plant Hopper", 
+    "Yellow Stem Borer", 
+    "Aphids",
+    "Spotted Lanternfly"
+]
+
 # ── Color Palettes (Rich Green Enhancements) ──────────────
 if st.session_state.dark_mode:
     BG_GRADIENT = "linear-gradient(135deg, #0A0F0A 0%, #121412 100%)"
@@ -127,8 +137,8 @@ def load_model():
 model = load_model()
 
 def classify(img):
-    # Simulated prediction for UI testing
-    return "Common Beetle", 0.94 
+    # Simulated result based on BAU-Insectv2 classes
+    return "Rice Leafroller", 0.96 
 
 def add_to_inventory(label):
     if label not in ["No Specimen Detected", "Scanning...", "Awaiting Data"]:
@@ -136,18 +146,18 @@ def add_to_inventory(label):
         st.toast(f"Logged: {label}", icon="🐞")
 
 def send_email_alert(species, count, recipient):
-    """Sends an automated email alert using provided credentials."""
     sender_email = "aniyuva745@gmail.com"
-    sender_password = "xkoz kvqr xtjr atio" # Your app password
+    sender_password = "xkoz kvqr xtjr atio" 
     
     msg = EmailMessage()
     msg.set_content(f"""
-    INVASIVE SPECIES ALERT
-    ----------------------
+    PRIORITY INVASIVE SPECIES ALERT
+    ------------------------------
     System ID: TSA-2026-HQ
     Species Identified: {species}
+    Dataset: BAU-Insectv2
     Current Population Count: {count}
-    Status: Threshold Exceeded
+    Status: CRITICAL THRESHOLD REACHED
     """)
     
     msg['Subject'] = f"⚠️ ALERT: {species} Threshold Reached"
@@ -186,7 +196,6 @@ col_left, col_right = st.columns([1.6, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Evaluation Inputs</p>', unsafe_allow_html=True)
-    
     ctrl_col1, ctrl_col2 = st.columns(2)
     with ctrl_col1:
         st.session_state.cam_enabled = st.toggle("Enable Live Hardware Feed", value=st.session_state.cam_enabled)
@@ -208,38 +217,32 @@ with col_left:
                     time.sleep(2)
                     st.rerun()
         else:
-            st.info("Live feed is currently disabled. Toggle hardware feed above.")
-    
+            st.info("Live feed disabled.")
+
     with tabs[1]:
         st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
-        upload_mode = st.radio("Processing Module", ["Single Insect", "Batch Processing"], horizontal=True)
-        
-        if upload_mode == "Single Insect":
-            up = st.file_uploader("Select Image", type=["jpg","png"], key="single_up")
-            if up:
-                img = PIL.Image.open(up)
-                st.image(img, use_container_width=True)
-                if st.button("Run Classification", use_container_width=True):
-                    label, conf = classify(img)
-                    st.session_state.insect_res = (label, conf)
-                    add_to_inventory(label)
-        else:
-            ups = st.file_uploader("Select Multiple Files", type=["jpg","png"], accept_multiple_files=True, key="batch_up")
-            if ups and st.button("Execute Batch Analysis", use_container_width=True):
-                prog = st.progress(0)
-                for i, up in enumerate(ups):
-                    label, conf = classify(PIL.Image.open(up))
-                    add_to_inventory(label)
-                    st.session_state.insect_res = (label, conf)
-                    prog.progress((i + 1) / len(ups))
+        up = st.file_uploader("Select Image", type=["jpg","png"], key="single_up")
+        if up:
+            img = PIL.Image.open(up)
+            st.image(img, use_container_width=True)
+            if st.button("Run Classification", use_container_width=True):
+                label, conf = classify(img)
+                st.session_state.insect_res = (label, conf)
+                add_to_inventory(label)
         st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
     st.markdown('<p class="eyebrow">Detection Metrics</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
+    
+    # Check if invasive
+    is_invasive = label in INVASIVE_PESTS
+    status_text = "⚠️ INVASIVE PEST" if is_invasive else "✅ NATIVE / NON-TARGET"
+    status_color = "#FF4B4B" if is_invasive else "#4CAF50"
+
     st.markdown(f"""
-        <div class="bento-card" style="border-left: 5px solid {ACCENT};">
-            <p class="eyebrow" style="color:{TEXT_DIM}">Identified Insect</p>
+        <div class="bento-card" style="border-left: 5px solid {status_color};">
+            <p class="eyebrow" style="color:{status_color}">{status_text}</p>
             <div style="font-family:'Playfair Display'; font-size: 2.8rem; color:{TEXT}; line-height:1.1;">{label}</div>
             <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
                 <span style="color:{TEXT_DIM}; font-size:0.85rem; font-weight:600;">Confidence Rating</span>
@@ -251,7 +254,7 @@ with col_right:
     st.markdown('<p class="eyebrow">Local Inventory</p>', unsafe_allow_html=True)
     st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
     if not st.session_state.inventory:
-        st.markdown(f"<p style='color:{TEXT_DIM}; font-style:italic;'>No specimens logged in current session.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:{TEXT_DIM}; font-style:italic;'>No specimens logged.</p>", unsafe_allow_html=True)
     else:
         for species, count in st.session_state.inventory.items():
             st.markdown(f"""
@@ -263,18 +266,18 @@ with col_right:
     st.markdown("</div>", unsafe_allow_html=True)
 
     with st.expander("System Configs"):
-        is_custom = st.toggle("Manual Override: Recipient Email", value=False)
-        target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com") if is_custom else "agiridhar41@gmail.com"
+        target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com")
         threshold = st.slider("Population Alert Threshold", 1, 50, 5)
         if st.button("Reset Session Data", use_container_width=True):
             st.session_state.inventory = {}
             st.session_state.emails_sent = []
             st.rerun()
 
-# ── Email Automation Trigger ────────────────────────────────
+# ── Email Trigger Logic ────────────────────────────────────
 for species, count in st.session_state.inventory.items():
-    if count >= threshold and species not in st.session_state.emails_sent:
-        with st.spinner(f"Sending alert for {species}..."):
+    # ONLY alert if the species is in the invasive list AND meets threshold
+    if species in INVASIVE_PESTS and count >= threshold and species not in st.session_state.emails_sent:
+        with st.spinner(f"Sending critical alert for {species}..."):
             if send_email_alert(species, count, target_email):
                 st.session_state.emails_sent.append(species)
-                st.success(f"📧 Alert Sent: {species} population is high.")
+                st.success(f"📧 Priority Alert Sent: {species}")
