@@ -1,8 +1,8 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, RTCConfiguration
 from ultralytics import YOLO
 import PIL.Image
 import os
+import time
 
 # ── Page Configuration ────────────────────────────────────
 st.set_page_config(
@@ -12,7 +12,6 @@ st.set_page_config(
 )
 
 # ── Theme State & Toggle ──────────────────────────────────
-# Using a simple columns layout at the top for the toggle
 t_col1, t_col2 = st.columns([8, 1])
 with t_col2:
     dark_mode = st.toggle("🌙", value=True)
@@ -30,7 +29,6 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
 
-    /* Remove Streamlit Header/Red Line */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     
@@ -90,31 +88,40 @@ col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Input Feed</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["Picture Analysis", "Live Analysis"])
+    tabs = st.tabs(["Camera Control", "Picture Analysis"])
     
     with tabs[0]:
+        # Using st.camera_input for manual snapshots
+        cam_image = st.camera_input("Take a picture", label_visibility="collapsed")
+        
+        # Auto-poll switch
+        auto_poll = st.toggle("Enable Auto-Analysis (Every 3s)", value=False)
+        
+        if cam_image:
+            img = PIL.Image.open(cam_image)
+            label, conf = classify(img)
+            st.session_state.insect_res = (label, conf)
+            
+        if auto_poll:
+            time.sleep(3)
+            st.rerun()
+    
+    with tabs[1]:
         c1, c2 = st.columns(2)
         with c1:
             if st.button("Load Demo Insect"):
                 if os.path.exists("demo_image.jpg"):
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
-                else: st.error("The demo image file is missing.\n Please alert the creator to upload this dependency.")
+                else: st.error("Demo file missing.")
         with c2:
             up = st.file_uploader("Upload", type=["jpg","png"], label_visibility="collapsed")
             if up: st.session_state.active_img = PIL.Image.open(up)
 
         if "active_img" in st.session_state:
             st.image(st.session_state.active_img, use_container_width=True)
-            if st.button("Analyze Insect"):
+            if st.button("Analyze Upload"):
                 label, conf = classify(st.session_state.active_img)
                 st.session_state.insect_res = (label, conf)
-    
-    with tabs[1]:
-        webrtc_streamer(
-            key="live-insect",
-            rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
-            media_stream_constraints={"video": True, "audio": False},
-        )
 
 with col_right:
     st.markdown('<p class="eyebrow">Classification Result</p>', unsafe_allow_html=True)
