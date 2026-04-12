@@ -90,22 +90,22 @@ col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Input Feed</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["🖼 Static Analysis", "📷 Live Stream"])
+    tabs = st.tabs(["Picture Analysis", "Live Analysis"])
     
     with tabs[0]:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Load Demo Specimen"):
+            if st.button("Load Demo Insect"):
                 if os.path.exists("demo_image.jpg"):
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
-                else: st.error("demo_image.jpg missing.")
+                else: st.error("The demo image file is missing.\n Please alert the creator to upload this dependency.")
         with c2:
             up = st.file_uploader("Upload", type=["jpg","png"], label_visibility="collapsed")
             if up: st.session_state.active_img = PIL.Image.open(up)
 
         if "active_img" in st.session_state:
             st.image(st.session_state.active_img, use_container_width=True)
-            if st.button("Analyze Specimen"):
+            if st.button("Analyze Insect"):
                 label, conf = classify(st.session_state.active_img)
                 st.session_state.insect_res = (label, conf)
     
@@ -117,7 +117,7 @@ with col_left:
         )
 
 with col_right:
-    st.markdown('<p class="eyebrow">Taxonomy Result</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Classification Result</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
     
     st.markdown(f"""
