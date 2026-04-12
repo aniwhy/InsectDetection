@@ -29,6 +29,7 @@ EARTH_BROWN = "#3B2F2F"
 DARK_PALETTE = {
     "BG": "#121412",
     "CARD": "#26221C",
+    "SURFACE": "#1A1916",
     "TEXT": "#E0E4E0",
     "TEXT_DIM": "#8AA38D",
     "ACCENT": "#4CAF50",
@@ -37,6 +38,7 @@ DARK_PALETTE = {
 LIGHT_PALETTE = {
     "BG": "#F4F7F4",
     "CARD": "#F5E6D3",
+    "SURFACE": "#EEEDE8",
     "TEXT": "#1B2E1B",
     "TEXT_DIM": "#5D574F",
     "ACCENT": "#2E8B57",
@@ -52,7 +54,7 @@ BG, CARD, TEXT, TEXT_DIM, ACCENT, BORDER = (
 # ── CSS Overrides + Animations ──────────────────────────────
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
     
     /* === ANIMATIONS === */
     @keyframes slideIn {{
@@ -65,20 +67,9 @@ st.markdown(f"""
         to {{ opacity: 1; }}
     }}
     
-    @keyframes pulse {{
-        0%, 100% {{ opacity: 1; }}
-        50% {{ opacity: 0.7; }}
-    }}
-    
     @keyframes glow {{
         0%, 100% {{ box-shadow: 0 0 0px {ACCENT}; }}
         50% {{ box-shadow: 0 0 8px {ACCENT}66; }}
-    }}
-    
-    @keyframes shake {{
-        0%, 100% {{ transform: translateX(0); }}
-        25% {{ transform: translateX(-4px); }}
-        75% {{ transform: translateX(4px); }}
     }}
     
     /* === GLOBAL === */
@@ -144,7 +135,6 @@ st.markdown(f"""
         outline: none !important;
     }}
     
-    /* Track */
     div[data-baseweb="slider"] > div > div {{ 
         background: {BORDER} !important;
     }}
@@ -160,14 +150,29 @@ st.markdown(f"""
         transform: scale(0.97);
     }}
     
+    /* === TABS - REMOVE RED UNDERLINE === */
+    [data-baseweb="tab-list"] {{
+        border-bottom: 2px solid {BORDER} !important;
+        gap: 0 !important;
+    }}
+    [data-baseweb="tab"] {{
+        color: {TEXT_DIM} !important;
+        border-bottom: none !important;
+        padding: 12px 20px !important;
+    }}
+    [data-baseweb="tab"][aria-selected="true"] {{
+        color: {TEXT} !important;
+        border-bottom: 3px solid {ACCENT} !important;
+    }}
+    
+    /* === RADIO BUTTONS === */
+    [data-baseweb="radio"] label {{
+        color: {TEXT} !important;
+    }}
+    
     /* === THRESHOLD ALERT === */
     .alert-threshold {{
         animation: glow 1.5s ease-in-out infinite;
-    }}
-    
-    /* === DANGER BUTTON === */
-    .danger-btn {{
-        animation: shake 0.4s ease-in-out;
     }}
     
 </style>
@@ -318,15 +323,21 @@ with col_left:
             if up:
                 img = PIL.Image.open(up)
                 st.image(img, use_container_width=True)
-                if st.button("Run Intelligence Engine"):
+                if st.button("Run Intelligence Engine", use_container_width=True):
                     label, conf = classify(img)
                     st.session_state.insect_res = (label, conf)
                     add_to_inventory(label, target_email, current_threshold)
         else:
             uploads = st.file_uploader("Upload multiple images", type=["jpg","png"], accept_multiple_files=True, label_visibility="collapsed", key="batch_upload")
             if uploads:
-                st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.8rem;'><strong>{len(uploads)}</strong> images selected</p>", unsafe_allow_html=True)
-                if st.button("🔍 Process All", use_container_width=True):
+                st.markdown(f"""
+                <div style="background-color: {colors['SURFACE']}; border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; border-left: 3px solid {ACCENT};">
+                    <p style="margin: 0; color: {ACCENT}; font-weight: 700; font-size: 0.95rem;">{len(uploads)} image{'s' if len(uploads) != 1 else ''} selected</p>
+                    <p style="margin: 4px 0 0 0; color: {TEXT_DIM}; font-size: 0.8rem;">Ready to process</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("⚡ Process All", use_container_width=True):
                     progress_bar = st.progress(0)
                     results_list = []
                     
@@ -342,10 +353,32 @@ with col_left:
                         
                         progress_bar.progress((idx + 1) / len(uploads))
                     
-                    st.success(f"✅ Processed {len(uploads)} images")
-                    with st.expander("📋 View results"):
-                        for res in results_list:
-                            st.markdown(f"**{res['file']}** → {res['species']} ({res['confidence']})")
+                    # Success state with elegant typography
+                    st.markdown(f"""
+                    <div style="background: linear-gradient(135deg, {ACCENT}15, {ACCENT}08); border: 1px solid {ACCENT}33; border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center;">
+                        <p style="margin: 0; font-size: 1.1rem; font-weight: 700; color: {ACCENT};">✓ Complete</p>
+                        <p style="margin: 6px 0 0 0; color: {TEXT_DIM}; font-size: 0.9rem;">{len(uploads)} image{'s' if len(uploads) != 1 else ''} processed</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Results in elegant card layout
+                    st.markdown(f"<p class='eyebrow' style='margin-top: 20px;'>Results</p>", unsafe_allow_html=True)
+                    for idx, res in enumerate(results_list):
+                        status_color = "#E74C3C" if res['species'] == "Error" else ACCENT
+                        st.markdown(f"""
+                        <div style="background-color: {CARD}; border: 1px solid {BORDER}; border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 4px solid {status_color}; animation: slideIn 0.3s ease-out {idx * 0.05}s backwards;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <p style="margin: 0; font-size: 0.8rem; color: {TEXT_DIM}; word-break: break-word;">{res['file']}</p>
+                                    <p style="margin: 6px 0 0 0; font-size: 1rem; font-weight: 600; color: {TEXT};">{res['species'].replace('_', ' ').title()}</p>
+                                </div>
+                                <div style="text-align: right; white-space: nowrap;">
+                                    <p style="margin: 0; font-size: 0.7rem; color: {TEXT_DIM}; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Confidence</p>
+                                    <p style="margin: 6px 0 0 0; font-size: 1rem; font-weight: 700; color: {status_color};">{res['confidence']}</p>
+                                </div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
         
         st.markdown('</div>', unsafe_allow_html=True)
 
