@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
-import opencv-headless
+import cv2
 from ultralytics import YOLO
 import PIL.Image
 import os
