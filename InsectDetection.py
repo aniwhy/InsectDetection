@@ -1,108 +1,112 @@
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
-import cv2
+from streamlit_webrtc import webrtc_streamer, RTCConfiguration
 from ultralytics import YOLO
 import PIL.Image
 import os
 
 # ── Page Configuration ────────────────────────────────────
 st.set_page_config(
-    page_title="Insect Intelligence | YOLO11",
+    page_title="Insect Intelligence",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
-# ── Natural Earth & Forest Palette ────────────────────────
-BG       = "#F0F4EF"  # Soft Sage Mist
-CARD     = "#FFFFFF"  # Clean White
-TEXT     = "#1E352F"  # Deep Spruce
-TEXT_DIM = "#4A6741"  # Moss Green
-ACCENT   = "#2D5A27"  # Forest Fern
-BORDER   = "#D8E2DC"  # Pebble Grey
+# ── Theme Toggle (Sidebar) ────────────────────────────────
+with st.sidebar:
+    st.markdown("### UI Settings")
+    dark_mode = st.toggle("Dark Mode", value=True)
+    st.divider()
+    st.markdown("🔍 **Model:** YOLO11s-cls")
+    st.markdown("📂 **Weights:** `exp.pt`平衡")
 
-# ── Custom CSS ────────────────────────────────────────────
+# ── Dynamic Color Palette ─────────────────────────────────
+if dark_mode:
+    BG       = "#121412"  # Deep Charcoal Green
+    CARD     = "#1C1F1C"  # Dark Moss Card
+    TEXT     = "#E0E4E0"  # Off-white Sage
+    TEXT_DIM = "#8AA38D"  # Muted Leaf
+    ACCENT   = "#4CAF50"  # Vibrant Nature Green
+    BORDER   = "#2D332D"  # Dark Border
+else:
+    BG       = "#F4F7F4"  # Light Mint Cream
+    CARD     = "#FFFFFF"  # White
+    TEXT     = "#1B2E1B"  # Deep Forest
+    TEXT_DIM = "#556B2F"  # Olive
+    ACCENT   = "#2E8B57"  # Sea Green
+    BORDER   = "#D1DBCC"  # Pale Sage
+
+# ── CSS Overrides (Removing Red & Adding Theme) ───────────
 st.markdown(f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
 
-.main, [data-testid="stAppViewContainer"] {{ 
-    background-color: {BG} !important; 
-    font-family: 'Inter', sans-serif !important; 
-}}
+    /* Remove Streamlit Red Accents */
+    [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
+    .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
+    
+    /* Base Theme */
+    .main, [data-testid="stAppViewContainer"] {{ 
+        background-color: {BG} !important; 
+        font-family: 'Inter', sans-serif !important; 
+    }}
 
-.bento-card {{ 
-    background: {CARD}; 
-    border: 1px solid {BORDER}; 
-    border-radius: 24px; 
-    padding: 24px; 
-    box-shadow: 0 10px 30px rgba(30,53,47,0.05); 
-    margin-bottom: 20px; 
-}}
+    /* Bento Cards */
+    .bento-card {{ 
+        background: {CARD}; 
+        border: 1px solid {BORDER}; 
+        border-radius: 24px; 
+        padding: 24px; 
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1); 
+        margin-bottom: 20px; 
+        color: {TEXT};
+    }}
 
-.hero-title {{ 
-    font-family: 'Playfair Display', serif; 
-    font-size: 2.5rem; 
-    color: {TEXT}; 
-    margin-bottom: 0.5rem; 
-}}
+    .eyebrow {{ 
+        text-transform: uppercase; letter-spacing: 2px; 
+        font-size: 0.7rem; font-weight: 700; color: {ACCENT}; 
+        margin-bottom: 8px; 
+    }}
 
-.eyebrow {{ 
-    text-transform: uppercase; 
-    letter-spacing: 2px; 
-    font-size: 0.7rem; 
-    font-weight: 700; 
-    color: {ACCENT}; 
-    margin-bottom: 8px; 
-}}
-
-/* Styled Buttons */
-div.stButton > button {{ 
-    background-color: {ACCENT} !important; 
-    color: white !important; 
-    border-radius: 12px !important; 
-    border: none !important; 
-    font-weight: 600 !important;
-    padding: 0.6rem 1rem !important;
-}}
-
-/* Remove Streamlit Header/Footer */
-#MainMenu, footer, [data-testid="stHeader"] {{display: none;}}
+    /* UI Components */
+    div.stButton > button {{ 
+        background-color: {ACCENT} !important; 
+        color: white !important; 
+        border-radius: 12px !important; 
+        border: none !important; 
+        width: 100%;
+        font-weight: 600 !important;
+    }}
+    
+    /* Tabs styling */
+    .stTabs [data-baseweb="tab-list"] {{ background-color: transparent; }}
+    .stTabs [data-baseweb="tab"] {{ color: {TEXT_DIM}; }}
+    .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ACCENT}; }}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Model Loading (YOLO11s-cls) ───────────────────────────
+# ── Model Loading ─────────────────────────────────────────
 @st.cache_resource
 def load_insect_model():
-    # Loading your uploaded exp.pt (YOLO11)
     return YOLO('exp.pt')
 
 model = load_insect_model()
 
-def classify_image(img):
+def classify(img):
     results = model.predict(img, verbose=False)
     if results and results[0].probs:
         idx = results[0].probs.top1
         conf = results[0].probs.top1conf.item()
-        label = model.names[idx]
-        return label, conf
-    return "Unknown Specimen", 0.0
-
-# ── Navigation ────────────────────────────────────────────
-st.markdown(f"""
-    <div style="padding: 1.5rem 0; border-bottom: 1px solid {BORDER}; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between;">
-        <div style="font-family:'Playfair Display'; font-size: 1.5rem; font-weight:700; color:{TEXT}">
-            🌿 Insect Detection <span style="font-weight:400; font-size:0.9rem; color:{TEXT_DIM}">v1.1</span>
-        </div>
-        <div style="font-size: 0.7rem; font-weight: 700; color:{TEXT_DIM}; letter-spacing:1px;">POWERED BY YOLO11s</div>
-    </div>
-""", unsafe_allow_html=True)
+        return model.names[idx], conf
+    return "Unknown", 0.0
 
 # ── Main UI ───────────────────────────────────────────────
-col_input, col_results = st.columns([1.6, 1])
+st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-bottom:2rem;">Insect Detection</h1>', unsafe_allow_html=True)
 
-with col_input:
-    st.markdown('<p class="eyebrow">Data Acquisition</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["🖼 Static Capture", "📷 Real-time Stream"])
+col_left, col_right = st.columns([1.5, 1])
+
+with col_left:
+    st.markdown('<p class="eyebrow">Input Feed</p>', unsafe_allow_html=True)
+    tabs = st.tabs(["🖼 Upload / Demo", "📷 Live Stream"])
     
     with tabs[0]:
         c1, c2 = st.columns(2)
@@ -111,58 +115,48 @@ with col_input:
                 if os.path.exists("demo_image.jpg"):
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
                 else:
-                    st.error("demo_image.jpg not found.")
-        
+                    st.error("demo_image.jpg missing.")
         with c2:
-            up = st.file_uploader("Upload Image", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
-            if up:
-                st.session_state.active_img = PIL.Image.open(up)
+            up = st.file_uploader("Upload", type=["jpg","png"], label_visibility="collapsed")
+            if up: st.session_state.active_img = PIL.Image.open(up)
 
         if "active_img" in st.session_state:
             st.image(st.session_state.active_img, use_container_width=True)
-            if st.button("Run Classification Engine"):
-                label, conf = classify_image(st.session_state.active_img)
+            if st.button("Analyze Specimen"):
+                label, conf = classify(st.session_state.active_img)
                 st.session_state.insect_res = (label, conf)
     
     with tabs[1]:
         webrtc_streamer(
-            key="insect-stream",
+            key="live-insect",
             rtc_configuration=RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}),
             media_stream_constraints={"video": True, "audio": False},
         )
 
-with col_results:
-    st.markdown('<p class="eyebrow">Taxonomy Analysis</p>', unsafe_allow_html=True)
+with col_right:
+    st.markdown('<p class="eyebrow">Taxonomy Result</p>', unsafe_allow_html=True)
+    label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
     
-    label, conf = st.session_state.get("insect_res", ("Awaiting Input", 0.0))
-    
-    # Analysis Bento Card
     st.markdown(f"""
         <div class="bento-card">
-            <p class="eyebrow">Top Prediction</p>
-            <div style="font-family:'Playfair Display'; font-size: 2rem; color:{TEXT}; margin-bottom: 15px;">
+            <p class="eyebrow">Identification</p>
+            <div style="font-family:'Playfair Display'; font-size: 2.2rem; color:{TEXT};">
                 {label.replace('_', ' ').title()}
             </div>
-            <div style="background: {BORDER}; height: 6px; border-radius: 10px; overflow: hidden;">
+            <div style="background: {BORDER}; height: 8px; border-radius: 10px; margin-top: 1.5rem; overflow: hidden;">
                 <div style="background: {ACCENT}; width: {conf*100}%; height: 100%;"></div>
             </div>
             <p style="color: {TEXT_DIM}; font-size: 0.8rem; margin-top: 10px; font-weight: 600;">
-                Confidence Score: {conf:.2%}
+                Confidence: {conf:.2%}
             </p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Info Card
     st.markdown(f"""
-        <div class="bento-card" style="background: {TEXT}; border: none;">
-            <p class="eyebrow" style="color: {BORDER};">Engine Specs</p>
-            <p style="color: white; font-size: 0.85rem; opacity: 0.8;">
-                This deployment utilizes a YOLO11-Small classification head optimized for mobile-responsive environments.
+        <div class="bento-card" style="background: {ACCENT}; border: none;">
+            <p class="eyebrow" style="color: rgba(255,255,255,0.7);">System Status</p>
+            <p style="color: white; font-size: 0.9rem;">
+                Neural engine active. YOLO11 architecture optimized for low-latency classification.
             </p>
-            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid {TEXT_DIM}; font-size: 0.7rem; color: {BORDER};">
-                ARCH: YOLO11s-cls<br>
-                WEIGHTS: exp.pt<br>
-                INPUT: 224x224 (Internal)
-            </div>
         </div>
     """, unsafe_allow_html=True)
