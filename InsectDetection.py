@@ -20,23 +20,20 @@ if "inventory" not in st.session_state:
 if "emails_sent" not in st.session_state:
     st.session_state.emails_sent = []
 
-ALERT_THRESHOLD = 5
-
-def send_pest_control_email(species, count, receiver_email):
-    # Updated Credentials
+def send_pest_control_email(species, count, receiver_email, threshold):
     sender = "aniyuva745@gmail.com"
     password = "crei kema pjwg djwl" 
     
-    subject = f"TSA ALERT: Invasive Species Threshold Reached ({species.title()})"
+    subject = f"TSA ALERT: Population Threshold Reached ({species.title()})"
     body = f"""
     The Automated Insect Population Counter has detected a population influx.
     
     Species identified: {species.replace('_', ' ').title()}
     Total count: {count}
-    Location: Seven Springs, PA Region (TSA 2026)
+    User-defined Threshold: {threshold}
+    Location: Seven Springs, PA (TSA 2026)
     
-    Current Threshold: {ALERT_THRESHOLD}
-    Notification routed to: {receiver_email}
+    This notification was routed to: {receiver_email}
     """
     
     msg = MIMEMultipart()
@@ -55,15 +52,15 @@ def send_pest_control_email(species, count, receiver_email):
     except Exception:
         return False
 
-def add_to_inventory(label, target_email):
+def add_to_inventory(label, target_email, threshold):
     invalid_labels = ["No Specimen Detected", "Scanning...", "Awaiting Data", "Scanning"]
     if label not in invalid_labels:
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
         count = st.session_state.inventory[label]
         
-        # Trigger alert if threshold hit and email not yet sent for this session
-        if count >= ALERT_THRESHOLD and label not in st.session_state.emails_sent:
-            if send_pest_control_email(label, count, target_email):
+        # Trigger alert if threshold hit
+        if count >= threshold and label not in st.session_state.emails_sent:
+            if send_pest_control_email(label, count, target_email, threshold):
                 st.session_state.emails_sent.append(label)
                 st.toast(f"📧 Alert Sent to {target_email}!", icon="✅")
 
@@ -94,7 +91,6 @@ st.markdown(f"""
     button[aria-selected="true"] {{ color: {TEXT} !important; font-weight: 700 !important; }}
     .bento-card {{ background: {CARD}; border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; }}
     .eyebrow {{ text-transform: uppercase; letter-spacing: 2px; font-size: 0.7rem; font-weight: 700; color: {ACCENT} !important; margin-bottom: 8px; }}
-    input {{ background-color: {BG} !important; color: {TEXT} !important; border: 1px solid {BORDER} !important; border-radius: 8px !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -120,17 +116,26 @@ st.markdown(f'<h1 style="font-family:Playfair Display; color:{TEXT}; margin-top:
 
 col_left, col_right = st.columns([1.5, 1])
 
-# Determine Alert Destination
+# Agency Routing & Threshold Configuration
 with col_right:
-    st.markdown('<p class="eyebrow">Agency Routing</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Agency Configuration</p>', unsafe_allow_html=True)
     with st.container():
         st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
+        
+        # Recipient Selection
         is_custom = st.toggle("Custom Judge Email", value=False)
         if is_custom:
             target_email = st.text_input("Recipient Email", placeholder="judge@example.com")
         else:
             target_email = "akshath.giridhar@gmail.com"
             st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.8rem;'>Default: {target_email}</p>", unsafe_allow_html=True)
+        
+        st.markdown("<hr style='opacity:0.2; margin: 15px 0;'>", unsafe_allow_html=True)
+        
+        # Threshold Calibration
+        current_threshold = st.slider("Alert Threshold", min_value=1, max_value=50, value=5)
+        st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.75rem;'>System will alert agency after {current_threshold} detections.</p>", unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
 with col_left:
@@ -146,7 +151,7 @@ with col_left:
                 img = PIL.Image.open(cam_image)
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
-                add_to_inventory(label, target_email)
+                add_to_inventory(label, target_email, current_threshold)
             if auto_poll:
                 time.sleep(3)
                 st.rerun()
@@ -161,7 +166,7 @@ with col_left:
             if st.button("Run Intelligence Engine"):
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
-                add_to_inventory(label, target_email)
+                add_to_inventory(label, target_email, current_threshold)
 
 with col_right:
     st.markdown('<p class="eyebrow">Result Engine</p>', unsafe_allow_html=True)
@@ -186,11 +191,13 @@ with col_right:
         st.markdown(f"<p style='color:{TEXT_DIM};'>No specimens logged.</p>", unsafe_allow_html=True)
     else:
         for species, count in st.session_state.inventory.items():
-            color = "#ff4b4b" if count >= ALERT_THRESHOLD else TEXT
+            # Highlight red if threshold hit
+            is_over = count >= current_threshold
+            color = "#ff4b4b" if is_over else TEXT
             st.markdown(f"""
                 <div style="display:flex; justify-content:space-between; padding: 5px 0; border-bottom: 1px solid {BORDER}; color:{color};">
                     <span>{species.replace('_',' ').title()}</span>
-                    <span style="font-weight:700;">{count}</span>
+                    <span style="font-weight:700;">{count}{' ⚠️' if is_over else ''}</span>
                 </div>
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
