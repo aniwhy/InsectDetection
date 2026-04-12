@@ -14,30 +14,29 @@ st.set_page_config(
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1.2])
 with t_col2:
-    dark_mode = st.toggle("🌙 Mode", value=True)
+    dark_mode = st.toggle("Light/Dark Mode", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
 if dark_mode:
     BG, CARD, TEXT = "#121412", "#1C1F1C", "#E0E4E0"
     TEXT_DIM, ACCENT, BORDER = "#8AA38D", "#4CAF50", "#2D332D"
 else:
+    # Light Mode colors
     BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
     TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides (Aggressive UI Fix) ─────────────────────
+# ── CSS Overrides (Targeting Internal Upload Labels) ──────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
     
-    /* Global Reset */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
 
     /* Force all base text */
-    .stMarkdown, p, span, label, div {{ color: {TEXT} !important; }}
+    .stMarkdown, p, span, label {{ color: {TEXT} !important; }}
 
-    /* Custom Bento Card */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
@@ -53,53 +52,43 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
+    /* ── UPLOAD DIALOGUE FIX ── */
+    /* Target the text and 'Browse files' button labels specifically */
+    [data-testid="stFileUploader"] section {{
+        border: 1px solid {BORDER} !important;
+    }}
+    
+    /* Force text inside the upload box to be dark in light mode */
+    [data-testid="stFileUploadDropzone"] div div {{
+        color: #1B2E1B !important; 
+    }}
+    
+    /* Style the actual 'Browse files' button text */
+    [data-testid="stFileUploader"] button p {{
+        color: white !important;
+    }}
+    [data-testid="stFileUploader"] button {{
+        background-color: {ACCENT} !important;
+    }}
+
     /* ── TOGGLE FIX ── */
-    div[role="switch"] {{ background-color: {BORDER} !important; border: 1px solid {BORDER}; }}
+    div[role="switch"] {{ background-color: {BORDER} !important; }}
     div[role="switch"][aria-checked="true"] {{ background-color: {ACCENT} !important; }}
-    /* Small circle inside toggle */
     div[role="switch"] > div {{ background-color: {TEXT} !important; }}
 
-    /* ── UPLOAD BOX FIX ── */
-    section[data-testid="stFileUploader"] {{
-        background-color: {CARD} !important;
-        border: 2px dashed {ACCENT} !important;
-        border-radius: 20px !important;
-        padding: 1.5rem !important;
-    }}
-    /* "Browse files" button inside the uploader */
-    section[data-testid="stFileUploader"] button {{
-        background-color: {ACCENT} !important;
-        color: white !important;
-        border-radius: 8px !important;
-        border: none !important;
-    }}
-    /* The "Drag and drop" text */
-    [data-testid="stFileUploadDropzone"] div div {{
-        color: {TEXT} !important;
-    }}
-
-    /* Tabs styling */
-    .stTabs [data-baseweb="tab-highlight"] {{ background-color: {ACCENT}; }}
-    .stTabs [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; }}
-    .stTabs [aria-selected="true"] {{ color: {TEXT} !important; font-weight: 600; }}
-
-    /* Primary Analysis Buttons */
+    /* Buttons */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
         border-radius: 12px !important; 
-        height: 3rem;
         font-weight: 600 !important;
-        transition: 0.3s;
     }}
-    div.stButton > button:hover {{ transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }}
 </style>
 """, unsafe_allow_html=True)
 
 # ── Model Logic ───────────────────────────────────────────
 @st.cache_resource
 def load_model():
-    # Loading your updated exp-2.pt
     return YOLO('exp-2.pt')
 
 model = load_model()
@@ -111,8 +100,8 @@ def classify(img):
         idx = results[0].probs.top1
         label = model.names[idx]
         
-        # Threshold to avoid face-to-insect misidentification
-        if conf < 0.50:
+        # High threshold to prevent misidentifying humans
+        if conf < 0.55:
             return "No Specimen Detected", conf
         return label, conf
     return "Scanning...", 0.0
