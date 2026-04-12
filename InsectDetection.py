@@ -63,7 +63,7 @@ st.markdown(f"""
     /* ── TOGGLE FIX ── */
     /* The track */
     div[role="switch"] {{
-        background-color: {BORDER} !important;
+        background-color: "#121412" !important;
     }}
     div[role="switch"][aria-checked="true"] {{
         background-color: {BORDER} !important;
