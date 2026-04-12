@@ -211,11 +211,11 @@ with col_left:
         st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
-    st.markdown('<p class="eyebrow">Detection Intelligence</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Detection Metrics</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
     st.markdown(f"""
         <div class="bento-card" style="border-left: 5px solid {ACCENT};">
-            <p class="eyebrow" style="color:{TEXT_DIM}">Identified Taxon</p>
+            <p class="eyebrow" style="color:{TEXT_DIM}">Identified Insect</p>
             <div style="font-family:'Playfair Display'; font-size: 2.8rem; color:{TEXT}; line-height:1.1;">{label}</div>
             <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
                 <span style="color:{TEXT_DIM}; font-size:0.85rem; font-weight:600;">Confidence Rating</span>
