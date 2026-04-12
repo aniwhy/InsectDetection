@@ -161,7 +161,7 @@ st.markdown("---", unsafe_allow_html=True)
 col_left, col_right = st.columns([1.6, 1])
 
 with col_left:
-    st.markdown('<p class="eyebrow">Digital Surveillance Intake</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Evaluation Inputs</p>', unsafe_allow_html=True)
     
     ctrl_col1, ctrl_col2 = st.columns(2)
     with ctrl_col1:
