@@ -75,7 +75,7 @@ if dark_mode:
 else:
     BG, CARD, TEXT, TEXT_DIM, ACCENT, BORDER = "#F4F7F4", "#F5E6D3", "#1B2E1B", "#5D574F", "#2E8B57", "#D9C5B2"
 
-# ── CSS Overrides (Updated for Slider Theme) ──────────────
+# ── CSS Overrides (Slider "Red-State" Fix) ────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
@@ -88,13 +88,36 @@ st.markdown(f"""
     div[role="switch"] {{ background-color: {EARTH_BROWN} !important; border: 1px solid {BORDER} !important; }}
     div[role="switch"][aria-checked="true"] {{ background-color: {ACCENT} !important; }}
     
-    /* Slider (Threshold Bar) Styling */
-    div[data-baseweb="slider"] > div {{ background-color: transparent !important; }}
-    div[data-testid="stTickBar"] > div {{ color: {TEXT_DIM} !important; }}
+    /* COMPLETE SLIDER THEME OVERRIDE - KILLING THE RED */
     /* Slider Track */
-    div[data-baseweb="slider"] [role="slider"] {{ background-color: {ACCENT} !important; border: 2px solid {BG} !important; }}
-    /* Filled track portion */
-    div[data-baseweb="slider"] > div > div > div:nth-child(1) {{ background: {ACCENT} !important; }}
+    div[data-baseweb="slider"] > div > div {{ background: {BORDER} !important; }}
+    
+    /* Active Track (Left side of thumb) */
+    div[data-baseweb="slider"] div[data-testid="stTickBar"] + div > div > div:first-child {{
+        background-color: {ACCENT} !important;
+    }}
+
+    /* Slider Thumb (The Circle) */
+    div[data-baseweb="slider"] [role="slider"] {{
+        background-color: {ACCENT} !important;
+        border: 2px solid {CARD} !important;
+        box-shadow: none !important;
+    }}
+
+    /* Remove Red Hover/Active State */
+    div[data-baseweb="slider"] [role="slider"]:hover, 
+    div[data-baseweb="slider"] [role="slider"]:focus,
+    div[data-baseweb="slider"] [role="slider"]:active {{
+        border: 2px solid {ACCENT} !important;
+        background-color: {TEXT} !important;
+        box-shadow: 0 0 0 10px {ACCENT}33 !important; /* Soft green glow */
+    }}
+
+    /* Tooltip/Number above thumb */
+    div[role="tooltip"] {{
+        background-color: {ACCENT} !important;
+        color: white !important;
+    }}
     
     div[data-baseweb="tab-highlight"] {{ background-color: {ACCENT} !important; }}
     button[data-baseweb="tab"] {{ color: {TEXT_DIM} !important; border: none !important; }}
