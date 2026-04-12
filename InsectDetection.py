@@ -14,30 +14,32 @@ st.set_page_config(
 # ── Initialize Session State ───────────────────────────────
 if "inventory" not in st.session_state:
     st.session_state.inventory = {}
+if "emails_sent" not in st.session_state:
+    st.session_state.emails_sent = []
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = True
 if "cam_enabled" not in st.session_state:
     st.session_state.cam_enabled = True
 
-# ── Color Palettes ────────────────────────────────────────
+# ── Color Palettes (Rich Green Enhancements) ──────────────
 if st.session_state.dark_mode:
     BG_GRADIENT = "linear-gradient(135deg, #0A0F0A 0%, #121412 100%)"
-    CARD_BG = "rgba(20, 32, 20, 0.8)"
+    CARD_BG = "rgba(20, 30, 20, 0.7)" # Dark Green Tint
     TEXT = "#E0E4E0"
     TEXT_DIM = "#8AA38D"
-    ACCENT = "#4CAF50" # Forest Green
+    ACCENT = "#4CAF50" # Vibrant Forest Green
     BORDER = "#2D362E"
     SURFACE = "#1A1D1A"
 else:
     BG_GRADIENT = "linear-gradient(135deg, #F0F7F0 0%, #E2E8E2 100%)"
-    CARD_BG = "rgba(255, 255, 255, 0.7)"
+    CARD_BG = "rgba(255, 255, 255, 0.6)"
     TEXT = "#1B2E1B"
     TEXT_DIM = "#4A5D4C"
     ACCENT = "#2E8B57" # Sea Green
     BORDER = "#C2D9C5"
     SURFACE = "#F0F2F0"
 
-# ── CSS Overrides (Fixing Tab Alignment & Text Bugs) ──────
+# ── CSS Overrides ──────────────────────────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap');
@@ -47,14 +49,16 @@ st.markdown(f"""
     .main, [data-testid="stAppViewContainer"] {{ 
         background: {BG_GRADIENT} !important; 
         font-family: 'Inter', sans-serif !important;
-        transition: all 0.6s ease-in-out !important;
+        transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }}
 
+    /* Centered Header Styling */
     .header-container {{
         text-align: center;
-        padding: 40px 0 30px 0;
+        padding: 40px 0 20px 0;
     }}
 
+    /* Bento Card Glow & Green Glass */
     .bento-card {{ 
         background: {CARD_BG}; 
         backdrop-filter: blur(12px);
@@ -62,14 +66,14 @@ st.markdown(f"""
         border-radius: 24px; 
         padding: 24px; 
         margin-bottom: 20px;
-        box-shadow: 0 8px 32px rgba(0, 40, 0, 0.1);
-        transition: all 0.3s ease !important;
+        box-shadow: 0 8px 32px rgba(0, 50, 0, 0.05);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
     }}
     
     .bento-card:hover {{
-        transform: translateY(-5px);
-        border-color: {ACCENT};
-        box-shadow: 0 12px 40px rgba(76, 175, 80, 0.15);
+        transform: translateY(-8px);
+        box-shadow: 0 15px 45px rgba(76, 175, 80, 0.15);
+        border-color: {ACCENT} !important;
     }}
 
     .eyebrow {{ 
@@ -81,54 +85,40 @@ st.markdown(f"""
         margin-bottom: 12px;
     }}
 
-    /* === FIXING TABS ALIGNMENT === */
-    [data-baseweb="tab-list"] {{
-        background-color: transparent !important;
-        border-bottom: 1px solid {BORDER} !important;
-        gap: 24px !important;
-    }}
-    
-    [data-baseweb="tab"] {{
-        padding: 10px 0px !important;
-        background-color: transparent !important;
-    }}
-
-    [data-baseweb="tab"] div p {{
-        font-size: 0.9rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 1px !important;
-        color: {TEXT_DIM} !important;
-        transition: color 0.3s ease !important;
-    }}
-
-    [data-baseweb="tab"][aria-selected="true"] div p {{
-        color: {ACCENT} !important;
-    }}
-
-    [data-baseweb="tab-highlight"] {{
-        background-color: {ACCENT} !important;
-    }}
-
-    /* Button Styling */
+    /* Green Buttons */
     .stButton > button {{
         border-radius: 14px !important;
         background-color: {SURFACE} !important;
         color: {TEXT} !important;
         border: 1px solid {BORDER} !important;
-        transition: 0.3s !important;
+        font-weight: 600 !important;
     }}
 
     .stButton > button:hover {{
+        background-color: {ACCENT}22 !important;
         border-color: {ACCENT} !important;
         color: {ACCENT} !important;
-        background-color: {ACCENT}11 !important;
     }}
 
-    /* Visibility Fixes for Labels */
-    label, .stMarkdown p, .stSlider p, div[data-testid="stWidgetLabel"] p {{
+    /* Text Color Normalization */
+    .stMarkdown p, .stMarkdown span, label, .stSlider p, div[data-testid="stWidgetLabel"] p, div[data-testid="stRadio"] label p {{
         color: {TEXT} !important;
-        font-weight: 500 !important;
     }}
+
+    .live-badge {{
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: {ACCENT}22;
+        padding: 6px 14px;
+        border-radius: 30px;
+        border: 1px solid {ACCENT}44;
+    }}
+
+    /* Tab Customization */
+    [data-baseweb="tab-list"] {{ border-bottom: 1px solid {BORDER} !important; }}
+    [data-baseweb="tab"] {{ color: {TEXT_DIM} !important; font-weight: 600; }}
+    [data-baseweb="tab"][aria-selected="true"] {{ color: {ACCENT} !important; border-bottom-color: {ACCENT} !important; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -137,7 +127,10 @@ st.markdown(f"""
 def load_model():
     return YOLO('yolov8n.pt') 
 
+model = load_model()
+
 def classify(img):
+    # Simulated prediction for UI testing
     return "Common Beetle", 0.94 
 
 def add_to_inventory(label):
@@ -148,81 +141,107 @@ def add_to_inventory(label):
 # ── Header Section ────────────────────────────────────────
 st.markdown(f"""
     <div class="header-container">
-        <h1 style="font-family:'Playfair Display'; color:{TEXT}; font-size: 4.5rem; margin:0; letter-spacing:-1px;">Insect Detection</h1>
-        <p style="color:{ACCENT}; font-size:0.85rem; font-weight:700; letter-spacing:4px; margin-top:10px;">
+        <h1 style="font-family:'Playfair Display'; color:{TEXT}; font-size: 4rem; margin:0;">Insect Detection</h1>
+        <p style="color:{ACCENT}; font-size:0.9rem; font-weight:700; letter-spacing:3px; margin-top:5px;">
             TSA 2026 &nbsp; | &nbsp; BIOMETRIC SURVEILLANCE &nbsp; | &nbsp; TEAM 2043-901
         </p>
     </div>
 """, unsafe_allow_html=True)
 
-# Theme Toggle Positioning
-t_col1, t_col2 = st.columns([10, 1])
-with t_col2:
-    if st.button("☀️" if st.session_state.dark_mode else "🌙"):
+# Floating Theme Toggle
+t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
+with t_col3:
+    if st.button("☀️" if st.session_state.dark_mode else "🌙", help="Switch Theme"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
 
+st.markdown("---", unsafe_allow_html=True)
+
 # ── Main Layout ────────────────────────────────────────────
-col_left, col_right = st.columns([1.6, 1], gap="large")
+col_left, col_right = st.columns([1.6, 1])
 
 with col_left:
-    st.markdown('<p class="eyebrow">Digital Intake</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Digital Surveillance Intake</p>', unsafe_allow_html=True)
     
-    # Structure for the tabs
-    tab_live, tab_archive = st.tabs(["[ LIVE FEED ]", "[ ARCHIVE UPLOAD ]"])
+    ctrl_col1, ctrl_col2 = st.columns(2)
+    with ctrl_col1:
+        st.session_state.cam_enabled = st.toggle("Enable Live Hardware Feed", value=st.session_state.cam_enabled)
+    with ctrl_col2:
+        sync_active = st.toggle("Auto-Refresh Inventory", value=False)
+
+    tabs = st.tabs(["[ LIVE FEED ]", "[ ARCHIVE UPLOAD ]"])
     
-    with tab_live:
-        st.session_state.cam_enabled = st.toggle("Enable Hardware Camera", value=st.session_state.cam_enabled)
+    with tabs[0]:
         if st.session_state.cam_enabled:
+            st.markdown(f"""<div class="live-badge"><span style="color:{ACCENT}; font-size:0.75rem; font-weight:800;">● SYSTEM ACTIVE</span></div>""", unsafe_allow_html=True)
             cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
             if cam_image:
                 img = PIL.Image.open(cam_image)
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
                 add_to_inventory(label)
+                if sync_active:
+                    time.sleep(2)
+                    st.rerun()
         else:
-            st.info("System waiting for hardware camera toggle.")
+            st.info("Live feed is currently disabled. Toggle hardware feed above.")
     
-    with tab_archive:
+    with tabs[1]:
         st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
-        upload_mode = st.radio("Archive Mode", ["Single Specimen", "Batch Processing"], horizontal=True)
+        upload_mode = st.radio("Processing Engine", ["Single Specimen", "Batch Processing"], horizontal=True)
         
-        up = st.file_uploader("Select Files", type=["jpg","png"], accept_multiple_files=(upload_mode == "Batch Processing"))
-        if up:
-            if st.button("Process Archive", use_container_width=True):
-                # Analysis logic here
-                st.success("Analysis complete.")
+        if upload_mode == "Single Specimen":
+            up = st.file_uploader("Select Image", type=["jpg","png"], key="single_up")
+            if up:
+                img = PIL.Image.open(up)
+                st.image(img, use_container_width=True)
+                if st.button("Run Classification", use_container_width=True):
+                    label, conf = classify(img)
+                    st.session_state.insect_res = (label, conf)
+                    add_to_inventory(label)
+        else:
+            ups = st.file_uploader("Select Multiple Files", type=["jpg","png"], accept_multiple_files=True, key="batch_up")
+            if ups and st.button("Execute Batch Analysis", use_container_width=True):
+                prog = st.progress(0)
+                for i, up in enumerate(ups):
+                    label, conf = classify(PIL.Image.open(up))
+                    add_to_inventory(label)
+                    st.session_state.insect_res = (label, conf)
+                    prog.progress((i + 1) / len(ups))
         st.markdown('</div>', unsafe_allow_html=True)
 
 with col_right:
-    st.markdown('<p class="eyebrow">Intelligence Engine</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Detection Intelligence</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
-    
     st.markdown(f"""
-        <div class="bento-card" style="border-left: 6px solid {ACCENT};">
+        <div class="bento-card" style="border-left: 5px solid {ACCENT};">
             <p class="eyebrow" style="color:{TEXT_DIM}">Identified Taxon</p>
-            <div style="font-family:'Playfair Display'; font-size: 3rem; color:{TEXT}; line-height:1;">{label}</div>
-            <div style="margin-top:20px;">
-                <span style="color:{TEXT_DIM}; font-size:0.8rem; font-weight:600;">CONFIDENCE</span>
-                <div style="color:{ACCENT}; font-weight:800; font-size:1.5rem;">{conf:.1%}</div>
+            <div style="font-family:'Playfair Display'; font-size: 2.8rem; color:{TEXT}; line-height:1.1;">{label}</div>
+            <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
+                <span style="color:{TEXT_DIM}; font-size:0.85rem; font-weight:600;">Confidence Rating</span>
+                <span style="color:{ACCENT}; font-weight:800; font-size:1.2rem;">{conf:.1%}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown('<p class="eyebrow">Session Inventory</p>', unsafe_allow_html=True)
+    st.markdown('<p class="eyebrow">Local Inventory</p>', unsafe_allow_html=True)
     st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
     if not st.session_state.inventory:
-        st.markdown(f"<p style='color:{TEXT_DIM}; font-style:italic;'>Inventory empty.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:{TEXT_DIM}; font-style:italic;'>No specimens logged in current session.</p>", unsafe_allow_html=True)
     else:
         for species, count in st.session_state.inventory.items():
             st.markdown(f"""
-                <div style="display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid {BORDER}55;">
+                <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid {BORDER};">
                     <span style="color:{TEXT}; font-weight:600;">{species}</span>
                     <span style="color:{ACCENT}; font-weight:800;">{count}</span>
                 </div>
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    if st.button("Purge Session Data", use_container_width=True):
-        st.session_state.inventory = {}
-        st.rerun()
+    with st.expander("⚙️ System Configuration"):
+        is_custom = st.toggle("Manual Override: Recipient Email", value=False)
+        target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com") if is_custom else "agiridhar41@gmail.com"
+        threshold = st.slider("Population Alert Threshold", 1, 50, 5)
+        if st.button("Purge Session Data", use_container_width=True):
+            st.session_state.inventory = {}
+            st.rerun()
