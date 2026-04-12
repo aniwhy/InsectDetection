@@ -15,7 +15,7 @@ st.set_page_config(
 t_col1, t_col2 = st.columns([8, 1.5])
 with t_col2:
     # Adding a label here so we can target it with CSS
-    dark_mode = st.toggle("🌙 Mode", value=True)
+    dark_mode = st.toggle("Light/Dark Mode", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
 if dark_mode:
@@ -66,11 +66,11 @@ st.markdown(f"""
         background-color: {BORDER} !important;
     }}
     div[role="switch"][aria-checked="true"] {{
-        background-color: {ACCENT} !important;
+        background-color: {BORDER} !important;
     }}
     /* The moving circle (handle) */
     div[role="switch"] > div {{
-        background-color: {TEXT} !important;
+        background-color: {ACCENT} !important;
     }}
 
     /* ── UI ELEMENTS ── */
