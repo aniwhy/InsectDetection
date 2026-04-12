@@ -60,6 +60,18 @@ st.markdown(f"""
         font-family: 'Inter', sans-serif !important;
     }}
 
+    /* === FIX FOR MISSING TOGGLE TEXT === */
+    /* Targets the label specifically to force color visibility */
+    div[data-testid="stWidgetLabel"] p {{
+        color: {TEXT} !important;
+        font-weight: 500 !important;
+        font-size: 0.9rem !important;
+    }}
+    
+    .stMarkdown p, .stMarkdown span {{
+        color: {TEXT};
+    }}
+
     @keyframes pulse {{
         0% {{ transform: scale(0.95); box-shadow: 0 0 0 0 {ACCENT}77; }}
         70% {{ transform: scale(1); box-shadow: 0 0 0 6px {ACCENT}00; }}
@@ -87,6 +99,9 @@ st.markdown(f"""
     .stButton > button {{
         border-radius: 12px !important;
         font-family: 'Inter', sans-serif !important;
+        background-color: {SURFACE} !important;
+        color: {TEXT} !important;
+        border: 1px solid {BORDER} !important;
     }}
     
     .live-badge {{
@@ -119,7 +134,6 @@ def load_model():
 model = load_model()
 
 def classify(img):
-    # Simulated prediction for the UI
     return "Common Beetle", 0.94
 
 def add_to_inventory(label, target_email, threshold):
@@ -135,7 +149,9 @@ with h_col1:
     st.markdown(f'<p style="color:{ACCENT}; font-size:0.75rem; font-weight:700; letter-spacing:1px; margin-top:-5px;">ENGINEERING DESIGN PORTFOLIO</p>', unsafe_allow_html=True)
 
 with h_col2:
-    if st.button("☀️" if st.session_state.dark_mode else "🌙", use_container_width=True):
+    # Uses the star/moon/sun logic based on your uploaded UI screenshots
+    icon = "☀️" if st.session_state.dark_mode else "🌙"
+    if st.button(icon, use_container_width=True):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
 
@@ -145,7 +161,6 @@ col_left, col_right = st.columns([1.6, 1])
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
     
-    # NEW: Toggle Elements
     t1, t2 = st.columns(2)
     with t1:
         st.session_state.cam_enabled = st.toggle("Enable Camera Feed", value=st.session_state.cam_enabled)
@@ -194,7 +209,8 @@ with col_right:
         st.markdown(f"<p style='color:{TEXT_DIM}; font-size:0.75rem; font-weight:700; margin-top:15px; text-transform:uppercase;'>Alert Threshold</p>", unsafe_allow_html=True)
         current_threshold = st.slider("Threshold", 1, 50, 5, label_visibility="collapsed")
         
-        if st.button("Clear Data", use_container_width=True):
+        # Clear button with the blue sync icon as per your screenshot
+        if st.button("🔄 Clear Data", use_container_width=True):
             st.session_state.inventory = {}
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
