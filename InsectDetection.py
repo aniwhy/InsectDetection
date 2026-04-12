@@ -238,10 +238,10 @@ with col_right:
             """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.expander("⚙️ System Configuration"):
+    with st.expander("System Configs"):
         is_custom = st.toggle("Manual Override: Recipient Email", value=False)
         target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com") if is_custom else "agiridhar41@gmail.com"
         threshold = st.slider("Population Alert Threshold", 1, 50, 5)
-        if st.button("Purge Session Data", use_container_width=True):
+        if st.button("Reset Session Data", use_container_width=True):
             st.session_state.inventory = {}
             st.rerun()
