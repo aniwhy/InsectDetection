@@ -14,7 +14,6 @@ st.set_page_config(
 # ── Theme State & Toggle ──────────────────────────────────
 t_col1, t_col2 = st.columns([8, 1])
 with t_col2:
-    # Adding a label for accessibility, but we'll style it below
     dark_mode = st.toggle("🌙", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
@@ -25,26 +24,24 @@ else:
     BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
     TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides ─────────────────────────────────────────
+# ── CSS Overrides (Deep Integration) ──────────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
     
-    /* Global Reset & Streamlit Hiding */
+    /* Global Reset */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     
     .main, [data-testid="stAppViewContainer"] {{ 
         background-color: {BG} !important; 
         font-family: 'Inter', sans-serif !important; 
-        color: {TEXT} !important;
     }}
 
-    /* Fix invisible Toggle and Uploader text in Light Mode */
-    .stMarkdown, p, span, label, div {{
-        color: {TEXT} !important;
-    }}
+    /* Force all text colors */
+    .stMarkdown, p, span, label {{ color: {TEXT} !important; }}
 
+    /* Custom Bento Card */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
@@ -60,6 +57,21 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
+    /* Fixing the Toggle Visuals */
+    div[data-testid="stWidgetLabel"] p {{ color: {TEXT} !important; }}
+    div[role="switch"] {{ background-color: {BORDER} !important; }}
+    div[role="switch"][aria-checked="true"] {{ background-color: {ACCENT} !important; }}
+
+    /* Making the Upload Box Blend In */
+    section[data-testid="stFileUploader"] {{
+        background-color: {CARD} !important;
+        border: 1px dashed {BORDER} !important;
+        border-radius: 15px !important;
+        padding: 10px !important;
+    }}
+    section[data-testid="stFileUploader"] div div {{ color: {TEXT_DIM} !important; }}
+    
+    /* Fix Button Color */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
@@ -87,11 +99,9 @@ def classify(img):
         idx = results[0].probs.top1
         label = model.names[idx]
         
-        # Anti-Face-Sawfly Logic: Increase threshold for commonly misidentified insects
-        threshold = 0.50 
-        if conf < threshold:
+        # Threshold logic to prevent "face-sawfly" issues
+        if conf < 0.50:
             return "No Specimen Detected", conf
-            
         return label, conf
     return "Scanning...", 0.0
 
@@ -125,6 +135,7 @@ with col_left:
                     st.session_state.active_img = PIL.Image.open("demo_image.jpg")
                 else: st.error("Demo file missing.")
         with c2:
+            # The CSS above now makes this blend into the background
             up = st.file_uploader("Upload Image", type=["jpg","png"], label_visibility="collapsed")
             if up: st.session_state.active_img = PIL.Image.open(up)
 
