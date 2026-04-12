@@ -12,31 +12,68 @@ st.set_page_config(
 )
 
 # ── Theme State & Toggle ──────────────────────────────────
-t_col1, t_col2 = st.columns([8, 1.2])
+t_col1, t_col2 = st.columns([8, 1.5])
 with t_col2:
-    dark_mode = st.toggle("Light/Dark Mode", value=True)
+    # Adding a label here so we can target it with CSS
+    dark_mode = st.toggle("🌙 Mode", value=True)
 
 # ── Dynamic Color Palette ─────────────────────────────────
 if dark_mode:
     BG, CARD, TEXT = "#121412", "#1C1F1C", "#E0E4E0"
     TEXT_DIM, ACCENT, BORDER = "#8AA38D", "#4CAF50", "#2D332D"
 else:
-    # Light Mode colors
     BG, CARD, TEXT = "#F4F7F4", "#FFFFFF", "#1B2E1B"
     TEXT_DIM, ACCENT, BORDER = "#556B2F", "#2E8B57", "#D1DBCC"
 
-# ── CSS Overrides (Targeting Internal Upload Labels) ──────
+# ── CSS Overrides (Deep Browser Targeting) ────────────────
 st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap');
     
+    /* Global Reset */
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .stAppViewDecoration {{ background-image: none !important; background-color: {BG} !important; }}
     .main, [data-testid="stAppViewContainer"] {{ background-color: {BG} !important; font-family: 'Inter', sans-serif !important; }}
 
-    /* Force all base text */
-    .stMarkdown, p, span, label {{ color: {TEXT} !important; }}
+    /* ── FIXING THE INVISIBLE TEXT ── */
+    /* This targets the labels for toggles and uploaders directly */
+    .stText, .stMarkdown p, label, .stToggle label p {{
+        color: {TEXT} !important;
+        font-weight: 600 !important;
+    }}
 
+    /* ── UPLOAD BOX FIX ── */
+    [data-testid="stFileUploader"] {{
+        background-color: {CARD} !important;
+        border: 2px dashed {ACCENT} !important;
+        border-radius: 15px !important;
+    }}
+    
+    /* Force the 'Browse files' button to stay dark/visible */
+    [data-testid="stFileUploader"] button {{
+        background-color: {ACCENT} !important;
+        color: white !important;
+    }}
+
+    /* Target the 'Drag and drop' small text that ghosts out */
+    [data-testid="stFileUploadDropzone"] div div span {{
+        color: {TEXT} !important;
+    }}
+
+    /* ── TOGGLE FIX ── */
+    /* The track */
+    div[role="switch"] {{
+        background-color: {BORDER} !important;
+    }}
+    div[role="switch"][aria-checked="true"] {{
+        background-color: {ACCENT} !important;
+    }}
+    /* The moving circle (handle) */
+    div[role="switch"] > div {{
+        background-color: {TEXT} !important;
+    }}
+
+    /* ── UI ELEMENTS ── */
     .bento-card {{ 
         background: {CARD}; 
         border: 1px solid {BORDER}; 
@@ -52,36 +89,10 @@ st.markdown(f"""
         margin-bottom: 8px; 
     }}
 
-    /* ── UPLOAD DIALOGUE FIX ── */
-    /* Target the text and 'Browse files' button labels specifically */
-    [data-testid="stFileUploader"] section {{
-        border: 1px solid {BORDER} !important;
-    }}
-    
-    /* Force text inside the upload box to be dark in light mode */
-    [data-testid="stFileUploadDropzone"] div div {{
-        color: #1B2E1B !important; 
-    }}
-    
-    /* Style the actual 'Browse files' button text */
-    [data-testid="stFileUploader"] button p {{
-        color: white !important;
-    }}
-    [data-testid="stFileUploader"] button {{
-        background-color: {ACCENT} !important;
-    }}
-
-    /* ── TOGGLE FIX ── */
-    div[role="switch"] {{ background-color: {BORDER} !important; }}
-    div[role="switch"][aria-checked="true"] {{ background-color: {ACCENT} !important; }}
-    div[role="switch"] > div {{ background-color: {TEXT} !important; }}
-
-    /* Buttons */
     div.stButton > button {{ 
         background-color: {ACCENT} !important; 
         color: white !important; 
         border-radius: 12px !important; 
-        font-weight: 600 !important;
     }}
 </style>
 """, unsafe_allow_html=True)
@@ -113,7 +124,7 @@ col_left, col_right = st.columns([1.5, 1])
 
 with col_left:
     st.markdown('<p class="eyebrow">Data Intake</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["Capture Control", "Manual Upload"])
+    tabs = st.tabs(["Camera Control", "Manual Upload"])
     
     with tabs[0]:
         cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
@@ -141,7 +152,6 @@ with col_left:
 with col_right:
     st.markdown('<p class="eyebrow">Result Engine</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
-    
     display_label = label.replace('_', ' ').title()
     
     st.markdown(f"""
