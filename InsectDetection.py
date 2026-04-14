@@ -52,7 +52,7 @@ st.markdown(f"""
 @st.cache_resource
 def load_model():
     # NOTE: yolov8n.pt is a general model. Replace with your 'best.pt' for insects!
-    return YOLO('yolov8n.pt') 
+    return YOLO('exp.pt') 
 
 model = load_model()
 
