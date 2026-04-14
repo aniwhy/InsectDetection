@@ -15,15 +15,15 @@ st.set_page_config(
 
 # ── Invasive Status Database ──────────────────────────────
 INSECT_DATABASE = {
-    "Aphids": {"status": "Invasive", "color": "#FF4B4B"},
-    "Armyworm": {"status": "Invasive", "color": "#FF4B4B"},
-    "Beetle": {"status": "Non-Invasive", "color": "#4CAF50"},
-    "Bollworm": {"status": "Invasive", "color": "#FF4B4B"},
-    "Grasshopper": {"status": "Non-Invasive", "color": "#4CAF50"},
-    "Mites": {"status": "Invasive", "color": "#FF4B4B"},
-    "Mosquito": {"status": "Non-Invasive", "color": "#4CAF50"},
-    "Sawfly": {"status": "Non-Invasive", "color": "#4CAF50"},
-    "Stem Borer": {"status": "Invasive", "color": "#FF4B4B"}
+    "Aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Small sap-sucking pests."},
+    "Armyworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Highly destructive crop larvae."},
+    "Beetle": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native ecological species."},
+    "Bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Cotton and corn pest."},
+    "Grasshopper": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native herbivore."},
+    "Mites": {"status": "Invasive", "color": "#FF4B4B", "desc": "Plant-damaging arachnids."},
+    "Mosquito": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native nuisance insect."},
+    "Sawfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native defoliator."},
+    "Stem Borer": {"status": "Invasive", "color": "#FF4B4B", "desc": "Internal plant tissue feeder."}
 }
 
 # ── Initialize Session State ───────────────────────────────
@@ -54,7 +54,7 @@ st.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .main, [data-testid="stAppViewContainer"] {{ background: {BG_GRADIENT} !important; font-family: 'Inter', sans-serif !important; }}
-    .bento-card {{ background: {CARD_BG}; backdrop-filter: blur(12px); border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; transition: all 0.3s ease; }}
+    .bento-card {{ background: {CARD_BG}; backdrop-filter: blur(12px); border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; }}
     .eyebrow {{ text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; font-weight: 800; color: {ACCENT}; margin-bottom: 12px; }}
     .stButton > button {{ border-radius: 14px !important; background-color: {SURFACE} !important; color: {TEXT} !important; border: 1px solid {BORDER} !important; }}
     .stMarkdown p, label {{ color: {TEXT} !important; }}
@@ -69,16 +69,12 @@ def load_model():
 model = load_model()
 
 def classify(img):
-    """Actual AI Inference Logic for Classification Models"""
     results = model.predict(source=img, conf=0.25, verbose=False)
-    
-    # exp.pt is a classification model, so we use .probs instead of .boxes
     if results[0].probs is not None:
         class_id = int(results[0].probs.top1)
         label = model.names[class_id].replace("_", " ").title()
         conf = float(results[0].probs.top1conf)
         return label, conf
-    
     return "No Specimen Detected", 0.0
 
 def add_to_inventory(label):
@@ -89,12 +85,10 @@ def add_to_inventory(label):
 def send_email_alert(species, count, recipient):
     sender_email = "aniyuva745@gmail.com"
     sender_password = "xkoz kvqr xtjr atio"
-    
-    status_info = INSECT_DATABASE.get(species, {"status": "Unknown"})
-    
+    info = INSECT_DATABASE.get(species, {"status": "Unknown"})
     msg = EmailMessage()
-    msg.set_content(f"INVASIVE SPECIES ALERT\n\nSpecies: {species}\nStatus: {status_info['status']}\nCount: {count}\n\nImmediate action may be required.")
-    msg['Subject'] = f"⚠️ TSA ALERT: {species} ({status_info['status']})"
+    msg.set_content(f"ALERT: {species} ({info['status']}) detected. Population: {count}")
+    msg['Subject'] = f"⚠️ TSA ALERT: {species} Threshold Reached"
     msg['From'], msg['To'] = sender_email, recipient
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
@@ -132,9 +126,7 @@ with col_left:
 with col_right:
     st.markdown('<p class="eyebrow">Detection Metrics</p>', unsafe_allow_html=True)
     label, conf = st.session_state.insect_res
-    
-    # Get invasive data for UI
-    info = INSECT_DATABASE.get(label, {"status": "Unknown", "color": ACCENT})
+    info = INSECT_DATABASE.get(label, {"status": "Unknown", "color": ACCENT, "desc": ""})
     
     st.markdown(f"""
         <div class="bento-card" style="border-left: 5px solid {info['color']};">
@@ -147,6 +139,7 @@ with col_right:
                     {info['status'].upper()}
                 </div>
             </div>
+            <p style="color:{TEXT_DIM}; font-size:0.8rem; margin-top:10px;">{info['desc']}</p>
             <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
                 <span style="color:{TEXT_DIM}; font-size:0.85rem; font-weight:600;">Confidence</span>
                 <span style="color:{ACCENT}; font-weight:800; font-size:1.2rem;">{conf:.1%}</span>
@@ -162,14 +155,21 @@ with col_right:
             s_info = INSECT_DATABASE.get(species, {"color": TEXT})
             st.markdown(f"<p style='margin:0;'><b>{species}</b>: <span style='color:{s_info['color']};'>{count}</span></p>", unsafe_allow_html=True)
 
-    # Email Logic
-    threshold = st.sidebar.slider("Alert Threshold", 1, 20, 5)
-    target_email = st.sidebar.text_input("Alert Email", "agiridhar41@gmail.com")
-    
-    for species, count in st.session_state.inventory.items():
-        if count >= threshold and species not in st.session_state.emails_sent:
-            # Only trigger email if species is INVASIVE
-            if INSECT_DATABASE.get(species, {}).get("status") == "Invasive":
-                if send_email_alert(species, count, target_email):
-                    st.session_state.emails_sent.append(species)
-                    st.sidebar.success(f"Email sent for {species}!")
+    # ── SYSTEM CONFIGS ──
+    st.markdown('<p class="eyebrow" style="margin-top:20px;">System Configs</p>', unsafe_allow_html=True)
+    with st.expander("Configuration Settings"):
+        target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com")
+        threshold = st.slider("Population Alert Threshold", 1, 50, 5)
+        
+        if st.button("Reset Session Data", use_container_width=True):
+            st.session_state.inventory = {}
+            st.session_state.emails_sent = []
+            st.rerun()
+
+# ── Email Automation Trigger ────────────────────────────────
+for species, count in st.session_state.inventory.items():
+    if count >= threshold and species not in st.session_state.emails_sent:
+        if INSECT_DATABASE.get(species, {}).get("status") == "Invasive":
+            if send_email_alert(species, count, target_email):
+                st.session_state.emails_sent.append(species)
+                st.success(f"📧 Alert Sent for {species}!")
