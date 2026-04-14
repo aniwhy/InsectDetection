@@ -53,13 +53,37 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
-    .main, [data-testid="stAppViewContainer"] {{ background: {BG_GRADIENT} !important; font-family: 'Inter', sans-serif !important; }}
+    .main, [data-testid="stAppViewContainer"] {{ 
+        background: {BG_GRADIENT} !important; 
+        font-family: 'Inter', sans-serif !important; 
+        transition: all 0.5s ease;
+    }}
+    .header-container {{ text-align: center; padding-bottom: 20px; }}
     .bento-card {{ background: {CARD_BG}; backdrop-filter: blur(12px); border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; }}
     .eyebrow {{ text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; font-weight: 800; color: {ACCENT}; margin-bottom: 12px; }}
     .stButton > button {{ border-radius: 14px !important; background-color: {SURFACE} !important; color: {TEXT} !important; border: 1px solid {BORDER} !important; }}
     .stMarkdown p, label {{ color: {TEXT} !important; }}
 </style>
 """, unsafe_allow_html=True)
+
+# ── Header & Theme Toggle ─────────────────────────────────
+t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
+
+with t_col2:
+    st.markdown(f"""
+        <div class="header-container">
+            <h1 style="font-family:'Playfair Display'; color:{TEXT}; font-size: 4rem; margin:0;">Insect Detection</h1>
+            <p style="color:{ACCENT}; font-size:0.9rem; font-weight:700; letter-spacing:3px; margin-top:5px;">
+                TSA 2026 &nbsp; | &nbsp; ENGINEERING DESIGN &nbsp; | &nbsp; TEAM 2043-901
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+
+with t_col3:
+    st.write(" ") # Padding
+    if st.button("☀️" if st.session_state.dark_mode else "🌙"):
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        st.rerun()
 
 # ── Logic Functions ───────────────────────────────────────
 @st.cache_resource
@@ -97,9 +121,7 @@ def send_email_alert(species, count, recipient):
         return True
     except: return False
 
-# ── UI Layout ─────────────────────────────────────────────
-st.markdown(f'<div style="text-align:center; padding:20px;"><h1 style="font-family:Playfair Display; color:{TEXT}; font-size:3.5rem;">Insect Detection</h1></div>', unsafe_allow_html=True)
-
+# ── Main UI Content ───────────────────────────────────────
 col_left, col_right = st.columns([1.6, 1])
 
 with col_left:
