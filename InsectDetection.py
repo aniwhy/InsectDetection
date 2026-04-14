@@ -55,16 +55,20 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
     
-    /* Disable Text Copying */
-    body, .stApp {{
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
+    /* Disable Text Copying Everywhere */
+    body, .stApp, * {{
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
     }}
 
-    /* Re-enable selection for input fields */
-    input, textarea {{
+    /* Re-enable selection ONLY for input fields */
+    input, textarea, [contenteditable="true"] {{
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
         user-select: text !important;
     }}
 
@@ -143,9 +147,9 @@ t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
 
 with t_col2:
     st.markdown(f"""
-        <div style="text-align:center; padding: 40px 0 20px 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-            <h1 style="font-family:'Playfair Display'; font-size: 4.8rem; margin:0; line-height:1; color:{TEXT}; user-select: none; pointer-events: none;">Insect Detection</h1>
-            <p style="color:{ACCENT}; font-size:0.8rem; font-weight:700; letter-spacing:5px; margin-top:15px; opacity:0.8; user-select: none; pointer-events: none;">
+        <div style="text-align:center; padding: 40px 0 20px 0;">
+            <h1 style="font-family:'Playfair Display'; font-size: 4.8rem; margin:0; line-height:1; color:{TEXT};">Insect Detection</h1>
+            <p style="color:{ACCENT}; font-size:0.8rem; font-weight:700; letter-spacing:5px; margin-top:15px; opacity:0.8;">
                 TSA 2026 &nbsp; | &nbsp; ENGINEERING DESIGN &nbsp; | &nbsp; TEAM 2043-901
             </p>
         </div>
@@ -183,7 +187,7 @@ col_left, col_right = st.columns([1.6, 1], gap="large")
 
 with col_left:
     st.markdown('<p class="eyebrow">Input Channels</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["📷 LIVE FEED", "📤 UPLOAD"])
+    tabs = st.tabs(["LIVE FEED", "UPLOAD DATA"])
     
     with tabs[0]:
         st.session_state.cam_enabled = st.toggle("Enable Camera System", value=st.session_state.cam_enabled)
@@ -227,7 +231,7 @@ with col_right:
     st.markdown('<p class="eyebrow">Inventory Count</p>', unsafe_allow_html=True)
     st.markdown(f'<div class="bento-card">', unsafe_allow_html=True)
     if not st.session_state.inventory:
-        st.markdown(f"<span style='color:{TEXT_DIM};'>No specimens detected yet.</span>", unsafe_allow_html=True)
+        st.markdown(f"<span style='color:{TEXT_DIM};'>No insects detected yet.</span>", unsafe_allow_html=True)
     for species, count in st.session_state.inventory.items():
         st.markdown(f"""
             <div style="display:flex; justify-content:space-between; border-bottom:1px solid {BORDER}; padding: 5px 0;">
