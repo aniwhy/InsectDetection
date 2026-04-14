@@ -127,8 +127,23 @@ def load_model():
 model = load_model()
 
 def classify(img):
-    # Simulated prediction for UI testing
-    return "Common Beetle", 0.94 
+    # 1. Run inference on the image
+    # We use conf=0.25 to ignore very low-certainty noise
+    results = model.predict(source=img, conf=0.25)
+    
+    # 2. Check if anything was actually detected
+    if len(results[0].boxes) > 0:
+        # Get the top detection (the one with the highest confidence)
+        top_box = results[0].boxes[0]
+        class_id = int(top_box.cls[0])
+        label = model.names[class_id]
+        confidence = float(top_box.conf[0])
+        
+        # Optional: Format the label for better UI (e.g., mosquito -> Mosquito)
+        label = label.replace("_", " ").title()
+        return label, confidence
+    
+    return "No Specimen Detected", 0.0
 
 def add_to_inventory(label):
     if label not in ["No Specimen Detected", "Scanning...", "Awaiting Data"]:
