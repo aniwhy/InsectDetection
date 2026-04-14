@@ -90,17 +90,32 @@ st.markdown(f"""
         box-shadow: 0 12px 30px {GLOW};
     }}
 
-    .stTabs [data-baseweb="tab-list"] {{ gap: 8px; }}
+    .stTabs [data-baseweb="tab-list"] {{ 
+        gap: 8px; 
+        margin-bottom: 16px;
+    }}
     .stTabs [data-baseweb="tab"] {{
         height: 48px;
         background-color: {SURFACE};
         border-radius: 12px 12px 0 0;
         border: 1px solid {BORDER};
         transition: 0.3s;
+        flex-grow: 1;
     }}
-    .stTabs [data-baseweb="tab"] div {{ color: {TEXT_DIM} !important; }}
+    .stTabs [data-baseweb="tab"] div {{ 
+        color: {TEXT_DIM} !important; 
+        font-weight: 600;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }}
     .stTabs [aria-selected="true"] {{ background-color: {ACCENT} !important; }}
-    .stTabs [aria-selected="true"] div {{ color: white !important; font-weight: 700; }}
+    .stTabs [aria-selected="true"] div {{ 
+        color: white !important; 
+        font-weight: 700; 
+        font-size: 0.9rem;
+    }}
 
     .eyebrow {{ text-transform: uppercase; letter-spacing: 3px; font-size: 0.7rem; font-weight: 800; color: {ACCENT}; margin-bottom: 12px; }}
     
@@ -115,6 +130,11 @@ st.markdown(f"""
 
     /* Fix input label visibility */
     .stMarkdown p, label, .stSlider div {{ color: {TEXT} !important; }}
+    
+    /* Improve tab content spacing */
+    .stTabs [data-baseweb="tab-panel"] {{
+        padding-top: 20px !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -123,9 +143,9 @@ t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
 
 with t_col2:
     st.markdown(f"""
-        <div style="text-align:center; padding: 40px 0 20px 0;">
-            <h1 style="font-family:'Playfair Display'; font-size: 4.8rem; margin:0; line-height:1; color:{TEXT};">Insect Detection</h1>
-            <p style="color:{ACCENT}; font-size:0.8rem; font-weight:700; letter-spacing:5px; margin-top:15px; opacity:0.8;">
+        <div style="text-align:center; padding: 40px 0 20px 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+            <h1 style="font-family:'Playfair Display'; font-size: 4.8rem; margin:0; line-height:1; color:{TEXT}; user-select: none; pointer-events: none;">Insect Detection</h1>
+            <p style="color:{ACCENT}; font-size:0.8rem; font-weight:700; letter-spacing:5px; margin-top:15px; opacity:0.8; user-select: none; pointer-events: none;">
                 TSA 2026 &nbsp; | &nbsp; ENGINEERING DESIGN &nbsp; | &nbsp; TEAM 2043-901
             </p>
         </div>
@@ -163,7 +183,7 @@ col_left, col_right = st.columns([1.6, 1], gap="large")
 
 with col_left:
     st.markdown('<p class="eyebrow">Input Channels</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["LIVE FEED", "MANUAL UPLOAD"])
+    tabs = st.tabs(["📷 LIVE FEED", "📤 UPLOAD"])
     
     with tabs[0]:
         st.session_state.cam_enabled = st.toggle("Enable Camera System", value=st.session_state.cam_enabled)
