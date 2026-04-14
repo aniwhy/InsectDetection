@@ -53,12 +53,35 @@ st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
+    
     .main, [data-testid="stAppViewContainer"] {{ 
         background: {BG_GRADIENT} !important; 
         font-family: 'Inter', sans-serif !important; 
-        transition: all 0.5s ease;
+        transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }}
-    .header-container {{ text-align: center; padding-bottom: 20px; }}
+
+    /* Header Styling */
+    .header-container {{ text-align: center; padding: 40px 0 20px 0; }}
+    
+    /* Clean Tab Styling */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 10px;
+        background-color: transparent;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        height: 45px;
+        background-color: {SURFACE};
+        border-radius: 12px 12px 0 0;
+        padding: 0 24px;
+        border: 1px solid {BORDER};
+        border-bottom: none;
+        transition: all 0.3s ease;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: {ACCENT} !important;
+        color: white !important;
+    }}
+
     .bento-card {{ background: {CARD_BG}; backdrop-filter: blur(12px); border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; }}
     .eyebrow {{ text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; font-weight: 800; color: {ACCENT}; margin-bottom: 12px; }}
     .stButton > button {{ border-radius: 14px !important; background-color: {SURFACE} !important; color: {TEXT} !important; border: 1px solid {BORDER} !important; }}
@@ -72,8 +95,8 @@ t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
 with t_col2:
     st.markdown(f"""
         <div class="header-container">
-            <h1 style="font-family:'Playfair Display'; color:{TEXT}; font-size: 4rem; margin:0;">Insect Detection</h1>
-            <p style="color:{ACCENT}; font-size:0.9rem; font-weight:700; letter-spacing:3px; margin-top:5px;">
+            <h1 style="font-family:'Playfair Display'; color:{TEXT}; font-size: 4.5rem; margin:0; line-height:1;">Insect Detection</h1>
+            <p style="color:{ACCENT}; font-size:0.85rem; font-weight:700; letter-spacing:4px; margin-top:10px; opacity:0.8;">
                 TSA 2026 &nbsp; | &nbsp; ENGINEERING DESIGN &nbsp; | &nbsp; TEAM 2043-901
             </p>
         </div>
@@ -122,11 +145,11 @@ def send_email_alert(species, count, recipient):
     except: return False
 
 # ── Main UI Content ───────────────────────────────────────
-col_left, col_right = st.columns([1.6, 1])
+col_left, col_right = st.columns([1.6, 1], gap="large")
 
 with col_left:
     st.markdown('<p class="eyebrow">Evaluation Inputs</p>', unsafe_allow_html=True)
-    tabs = st.tabs(["[ LIVE FEED ]", "[ ARCHIVE UPLOAD ]"])
+    tabs = st.tabs(["LIVE FEED", "ARCHIVE UPLOAD"])
     
     with tabs[0]:
         cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
@@ -136,7 +159,7 @@ with col_left:
             add_to_inventory(label)
 
     with tabs[1]:
-        up = st.file_uploader("Select Image", type=["jpg","png"])
+        up = st.file_uploader("Select Image", type=["jpg","png"], label_visibility="collapsed")
         if up:
             img = PIL.Image.open(up)
             st.image(img, use_container_width=True)
@@ -177,16 +200,29 @@ with col_right:
             s_info = INSECT_DATABASE.get(species, {"color": TEXT})
             st.markdown(f"<p style='margin:0;'><b>{species}</b>: <span style='color:{s_info['color']};'>{count}</span></p>", unsafe_allow_html=True)
 
-    # ── SYSTEM CONFIGS ──
     st.markdown('<p class="eyebrow" style="margin-top:20px;">System Configs</p>', unsafe_allow_html=True)
     with st.expander("Configuration Settings"):
         target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com")
         threshold = st.slider("Population Alert Threshold", 1, 50, 5)
-        
         if st.button("Reset Session Data", use_container_width=True):
             st.session_state.inventory = {}
             st.session_state.emails_sent = []
             st.rerun()
+
+# ── Bottom Reference Section ────────────────────────────────
+st.markdown("---")
+st.markdown('<p class="eyebrow" style="text-align:center;">Species Intelligence Reference</p>', unsafe_allow_html=True)
+ref_cols = st.columns(3)
+items = list(INSECT_DATABASE.items())
+for i, (name, data) in enumerate(items):
+    with ref_cols[i % 3]:
+        st.markdown(f"""
+            <div style="padding:15px; border-radius:15px; border:1px solid {BORDER}; background:{SURFACE}; margin-bottom:10px;">
+                <b style="color:{TEXT};">{name}</b><br>
+                <span style="color:{data['color']}; font-size:0.7rem; font-weight:800;">{data['status'].upper()}</span><br>
+                <span style="color:{TEXT_DIM}; font-size:0.75rem;">{data['desc']}</span>
+            </div>
+        """, unsafe_allow_html=True)
 
 # ── Email Automation Trigger ────────────────────────────────
 for species, count in st.session_state.inventory.items():
