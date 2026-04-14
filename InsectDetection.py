@@ -14,12 +14,12 @@ st.set_page_config(
 )
 
 # ── Insect Database & Status Mapping ──────────────────────
-# Based on your dataset screenshot: 5 Invasive vs 4 Non-Invasive
+# Exactly matching your folder names from the screenshot
 INSECT_DATABASE = {
-    "bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "High-risk agricultural pest"},
+    "bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Significant crop damage risk"},
     "armyworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Highly destructive to foliage"},
     "stem_borer": {"status": "Invasive", "color": "#FF4B4B", "desc": "Internal plant tissue feeder"},
-    "aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Sap-sucker & virus vector"},
+    "aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Rapid sap-sucker & virus vector"},
     "mites": {"status": "Invasive", "color": "#FF4B4B", "desc": "High infestation potential"},
     "mosquito": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native ecological nuisance"},
     "sawfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native defoliator"},
@@ -91,7 +91,9 @@ st.markdown(f"""
 # ── Logic Functions ───────────────────────────────────────
 @st.cache_resource
 def load_model():
-    return YOLO('yolov8n.pt')  # Ensure your custom trained model path is here if not using default
+    # TIP: Replace 'yolov8n.pt' with your custom trained model file (e.g., 'best.pt') 
+    # for it to recognize the insects in your folder!
+    return YOLO('yolov8n.pt')  
 
 model = load_model()
 
@@ -100,14 +102,17 @@ def get_status_info(label):
     return INSECT_DATABASE.get(key, {"status": "Unknown", "color": "#888888", "desc": "Non-indexed species"})
 
 def classify(img):
-    # This was the bug: it was hardcoded to "stem_borer".
-    # Now it actually runs your model on the image.
     results = model(img)
-    if results[0].probs is not None:
+    # Check if the model actually found something
+    if len(results) > 0 and results[0].probs is not None:
         idx = results[0].probs.top1
         label = results[0].names[idx]
         conf = float(results[0].probs.top1conf)
         return label, conf
+    
+    # Logic fallback: If you are just testing UI, you can uncomment the line below to simulate a result
+    # return "stem_borer", 0.98 
+    
     return "No Specimen Detected", 0.0
 
 def add_to_inventory(label):
@@ -196,7 +201,7 @@ with col_left:
 
 with col_right:
     st.markdown('<p class="eyebrow">Detection Metrics</p>', unsafe_allow_html=True)
-    label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
+    label, conf = st.session_state.get("insect_res", ("No Specimen Detected", 0.0))
     
     info = get_status_info(label)
     
@@ -245,7 +250,6 @@ with col_right:
 # ── Email Automation Trigger ────────────────────────────────
 for species, count in st.session_state.inventory.items():
     if count >= threshold and species not in st.session_state.emails_sent:
-        # Only alert for invasive species
         if get_status_info(species)['status'] == "Invasive":
             if send_email_alert(species, count, target_email):
                 st.session_state.emails_sent.append(species)
