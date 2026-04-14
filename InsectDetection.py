@@ -57,7 +57,7 @@ st.markdown(f"""
     .main, [data-testid="stAppViewContainer"] {{ 
         background: {BG_GRADIENT} !important; 
         font-family: 'Inter', sans-serif !important; 
-        transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }}
 
     /* Header Styling */
@@ -152,11 +152,17 @@ with col_left:
     tabs = st.tabs(["LIVE FEED", "ARCHIVE UPLOAD"])
     
     with tabs[0]:
-        cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
-        if cam_image:
-            label, conf = classify(PIL.Image.open(cam_image))
-            st.session_state.insect_res = (label, conf)
-            add_to_inventory(label)
+        # Live View Toggle
+        st.session_state.cam_enabled = st.toggle("Enable Live Camera", value=st.session_state.cam_enabled)
+        
+        if st.session_state.cam_enabled:
+            cam_image = st.camera_input("Snapshot", label_visibility="collapsed")
+            if cam_image:
+                label, conf = classify(PIL.Image.open(cam_image))
+                st.session_state.insect_res = (label, conf)
+                add_to_inventory(label)
+        else:
+            st.info("Live feed is currently disabled.")
 
     with tabs[1]:
         up = st.file_uploader("Select Image", type=["jpg","png"], label_visibility="collapsed")
@@ -211,7 +217,7 @@ with col_right:
 
 # ── Bottom Reference Section ────────────────────────────────
 st.markdown("---")
-st.markdown('<p class="eyebrow" style="text-align:center;">Species Intelligence Reference</p>', unsafe_allow_html=True)
+st.markdown('<p class="eyebrow" style="text-align:center;">Species Classification Reference</p>', unsafe_allow_html=True)
 ref_cols = st.columns(3)
 items = list(INSECT_DATABASE.items())
 for i, (name, data) in enumerate(items):
