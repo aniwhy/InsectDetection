@@ -181,7 +181,37 @@ def add_to_inventory(label):
     if label not in ["No Specimen Detected", "Awaiting Data"]:
         st.session_state.inventory[label] = st.session_state.inventory.get(label, 0) + 1
         st.toast(f"Logged: {label}", icon="🐞")
+        
+        # Check if it's invasive and exceeds threshold
+        count = st.session_state.inventory[label]
+        is_invasive = INSECT_DATABASE.get(label, {}).get("status") == "Invasive"
+        
+        # Prevent spamming: only send once when threshold is hit
+        if is_invasive and count >= threshold and label not in st.session_state.emails_sent:
+            success = send_email_alert(label, count, target_email)
+            if success:
+                st.session_state.emails_sent.append(label)
+                st.toast(f"Alert sent to {target_email}", icon="📧")
+        
+def send_email_alert(species, count, receiver_email):
+    # WARNING: Use an App Password, not your regular password!
+    sender_email = "aniyuva745@gmail.com" 
+    password = "gptk oqiq hlfz yfaa" 
 
+    msg = EmailMessage()
+    msg.set_content(f"ALERT: Invasive species detected!\n\nSpecies: {species}\nPopulation Count: {count}\nStatus: Urgent action required.")
+    msg['Subject'] = f"🚨 INVASIVE ALERT: {species} detected"
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(sender_email, password)
+            smtp.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
 # ── UI Layout ─────────────────────────────────────────────
 col_left, col_right = st.columns([1.6, 1], gap="large")
 
