@@ -164,7 +164,7 @@ def send_email_alert(species, count, receiver_email):
         return False
 
 def classify(img):
-    results = model.predict(source=img, conf=0.25, verbose=False)
+    results = model.predict(source=img, conf=0.5, verbose=False)
     if results[0].probs is not None:
         class_id = int(results[0].probs.top1)
         label = model.names[class_id].replace("_", " ").title()
@@ -196,7 +196,7 @@ t_col1, t_col2, t_col3 = st.columns([1, 8, 1])
 with t_col2:
     st.markdown(f"""
         <div style="text-align:center; padding: 40px 0 20px 0;">
-            <h1 style="font-family:'Playfair Display'; font-size: 4.8rem; margin:0; line-height:1; color:{TEXT};">Insect Detection</h1>
+            <h1 style="font-family:'Playfair Display'; font-size: 4.0rem; margin:0; line-height:1; color:{TEXT};">Insect Detection</h1>
             <p style="color:{ACCENT}; font-size:0.8rem; font-weight:700; letter-spacing:5px; margin-top:15px; opacity:0.8;">
                 TSA 2026 &nbsp; | &nbsp; ENGINEERING DESIGN &nbsp; | &nbsp; TEAM 2043-901
             </p>
