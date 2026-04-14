@@ -13,7 +13,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-
 # ── Invasive Status Database ──────────────────────────────
 INSECT_DATABASE = {
     "Aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Small sap-sucking pests."},
@@ -104,7 +103,7 @@ def send_email_alert(species, count, receiver_email):
             smtp.login(sender_email, password)
             smtp.send_message(msg)
         return True
-    except Exception as e:
+    except:
         return False
 
 def classify(img):
@@ -141,19 +140,21 @@ with t_col2:
         </div>
     """, unsafe_allow_html=True)
 with t_col3:
+    st.write("")
     if st.button("☀️" if st.session_state.dark_mode else "🌙"):
         st.session_state.dark_mode = not st.session_state.dark_mode
         st.rerun()
+
+# ── Main Layout ───────────────────────────────────────────
+col_left, col_right = st.columns([1.6, 1], gap="large")
+
 with col_right:
-    # ── 1. DEFINE CONFIGS FIRST (To prevent Errors) ──
+    # DEFINED FIRST TO AVOID ERROR
     st.markdown('<p class="eyebrow">System Configuration</p>', unsafe_allow_html=True)
     with st.expander("Adjust Parameters", expanded=True):
         target_email = st.text_input("Alert Recipient", value="agiridhar41@gmail.com")
         threshold = st.slider("Alert Threshold (Pop.)", 1, 50, 5)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # ── 2. DETECTION ANALYSIS ──
     st.markdown('<p class="eyebrow">Detection Analysis</p>', unsafe_allow_html=True)
     label, conf = st.session_state.insect_res
     info = INSECT_DATABASE.get(label, {"status": "Unknown", "color": ACCENT, "desc": "Awaiting classification..."})
@@ -173,7 +174,6 @@ with col_right:
         </div>
     """, unsafe_allow_html=True)
 
-    # ── 3. INVENTORY ──
     st.markdown('<p class="eyebrow">Inventory Count</p>', unsafe_allow_html=True)
     st.markdown('<div class="bento-card">', unsafe_allow_html=True)
     if not st.session_state.inventory:
@@ -186,15 +186,6 @@ with col_right:
         st.session_state.inventory = {}
         st.session_state.emails_sent = []
         st.rerun()
-
-# ── Sidebar-style Config (Defined before use) ──────────────
-with st.sidebar:
-    st.markdown('<p class="eyebrow">System Config</p>', unsafe_allow_html=True)
-    target_email = st.text_input("Alert Recipient", value="agiridhar41@gmail.com")
-    threshold = st.slider("Alert Threshold (Pop.)", 1, 50, 5)
-
-# ── UI Layout ─────────────────────────────────────────────
-col_left, col_right = st.columns([1.6, 1], gap="large")
 
 with col_left:
     st.markdown('<p class="eyebrow">Input Channels</p>', unsafe_allow_html=True)
@@ -218,39 +209,6 @@ with col_left:
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
                 add_to_inventory(label, threshold, target_email)
-
-with col_right:
-    st.markdown('<p class="eyebrow">Detection Analysis</p>', unsafe_allow_html=True)
-    label, conf = st.session_state.insect_res
-    info = INSECT_DATABASE.get(label, {"status": "Unknown", "color": ACCENT, "desc": "Awaiting classification..."})
-    
-    st.markdown(f"""
-        <div class="bento-card" style="border-right: 6px solid {info['color']};">
-            <p class="eyebrow" style="color:{TEXT_DIM}; font-size:0.6rem;">Species Identified</p>
-            <div style="font-family:'Playfair Display'; font-size: 2.8rem; color:{TEXT}; line-height:1; margin-bottom:10px;">{label}</div>
-            <div style="display:inline-block; background:{info['color']}22; color:{info['color']}; padding:4px 12px; border-radius:8px; font-size:0.7rem; font-weight:900; border:1px solid {info['color']}44; margin-bottom:15px;">
-                {info['status'].upper()}
-            </div>
-            <p style="color:{TEXT_DIM}; font-size:0.85rem; line-height:1.4;">{info['desc']}</p>
-            <div style="display:flex; justify-content:space-between; margin-top:25px; align-items:center;">
-                <span style="color:{TEXT_DIM}; font-size:0.8rem;">Confidence</span>
-                <span style="color:{ACCENT}; font-weight:900; font-size:1.5rem;">{conf:.1%}</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown('<p class="eyebrow">Inventory Count</p>', unsafe_allow_html=True)
-    st.markdown('<div class="bento-card">', unsafe_allow_html=True)
-    if not st.session_state.inventory:
-        st.markdown(f"<span style='color:{TEXT_DIM};'>No insects detected yet.</span>", unsafe_allow_html=True)
-    for species, count in st.session_state.inventory.items():
-        st.markdown(f'<div style="display:flex; justify-content:space-between; border-bottom:1px solid {BORDER}; padding: 5px 0;"><span style="color:{TEXT}; font-weight:600;">{species}</span><span style="color:{ACCENT}; font-weight:800;">{count}</span></div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    if st.button("Reset All Data", use_container_width=True):
-        st.session_state.inventory = {}
-        st.session_state.emails_sent = []
-        st.rerun()
 
 # ── Reference Database Grid ───────────────────────────────
 st.markdown("<br><hr><br>", unsafe_allow_html=True)
