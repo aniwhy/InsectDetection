@@ -14,12 +14,12 @@ st.set_page_config(
 )
 
 # ── Insect Database & Status Mapping ──────────────────────
-# Mapped to your specific dataset folder names
+# Based on your dataset screenshot: 5 Invasive vs 4 Non-Invasive
 INSECT_DATABASE = {
-    "bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Significant crop damage risk"},
+    "bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "High-risk agricultural pest"},
     "armyworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Highly destructive to foliage"},
     "stem_borer": {"status": "Invasive", "color": "#FF4B4B", "desc": "Internal plant tissue feeder"},
-    "aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Rapid sap-sucker & virus vector"},
+    "aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Sap-sucker & virus vector"},
     "mites": {"status": "Invasive", "color": "#FF4B4B", "desc": "High infestation potential"},
     "mosquito": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native ecological nuisance"},
     "sawfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native defoliator"},
@@ -91,19 +91,24 @@ st.markdown(f"""
 # ── Logic Functions ───────────────────────────────────────
 @st.cache_resource
 def load_model():
-    return YOLO('yolov8n.pt') 
+    return YOLO('yolov8n.pt')  # Ensure your custom trained model path is here if not using default
 
 model = load_model()
 
 def get_status_info(label):
-    # Normalize name to match dictionary (e.g., "Stem Borer" -> "stem_borer")
     key = label.lower().replace(" ", "_")
-    return INSECT_DATABASE.get(key, {"status": "Unknown", "color": "#888888", "desc": "No data available"})
+    return INSECT_DATABASE.get(key, {"status": "Unknown", "color": "#888888", "desc": "Non-indexed species"})
 
 def classify(img):
-    # Placeholder for actual model.predict() logic
-    # In production: results = model(img); label = results[0].names[results[0].probs.top1]
-    return "stem_borer", 0.94 
+    # This was the bug: it was hardcoded to "stem_borer".
+    # Now it actually runs your model on the image.
+    results = model(img)
+    if results[0].probs is not None:
+        idx = results[0].probs.top1
+        label = results[0].names[idx]
+        conf = float(results[0].probs.top1conf)
+        return label, conf
+    return "No Specimen Detected", 0.0
 
 def add_to_inventory(label):
     if label not in ["No Specimen Detected", "Scanning...", "Awaiting Data"]:
@@ -193,7 +198,6 @@ with col_right:
     st.markdown('<p class="eyebrow">Detection Metrics</p>', unsafe_allow_html=True)
     label, conf = st.session_state.get("insect_res", ("Awaiting Data", 0.0))
     
-    # NEW: Fetch Status Info for UI
     info = get_status_info(label)
     
     st.markdown(f"""
@@ -241,6 +245,8 @@ with col_right:
 # ── Email Automation Trigger ────────────────────────────────
 for species, count in st.session_state.inventory.items():
     if count >= threshold and species not in st.session_state.emails_sent:
-        if send_email_alert(species, count, target_email):
-            st.session_state.emails_sent.append(species)
-            st.success(f"📧 Alert Sent for {species.title()}")
+        # Only alert for invasive species
+        if get_status_info(species)['status'] == "Invasive":
+            if send_email_alert(species, count, target_email):
+                st.session_state.emails_sent.append(species)
+                st.success(f"📧 Alert Sent for {species.title()}")
