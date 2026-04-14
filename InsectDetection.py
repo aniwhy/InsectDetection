@@ -234,10 +234,14 @@ with col_left:
             if up:
                 img = PIL.Image.open(up)
                 st.image(img, use_container_width=True)
+                
+                # FIX: Ensure this button triggers the actual model inference
                 if st.button("Run Classification", use_container_width=True):
-                    label, conf = classify(img)
-                    st.session_state.insect_res = (label, conf)
-                    add_to_inventory(label)
+                    with st.spinner("Analyzing specimen..."):
+                        label, conf = classify(img) # This calls the YOLO model
+                        st.session_state.insect_res = (label, conf)
+                        add_to_inventory(label)
+                        st.rerun() # Refresh to show the new metrics in the right column
         else:
             ups = st.file_uploader("Select Multiple Files", type=["jpg","png"], accept_multiple_files=True, key="batch_up")
             if ups and st.button("Execute Batch Analysis", use_container_width=True):
