@@ -13,6 +13,19 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# ── Invasive Status Database ──────────────────────────────
+INSECT_DATABASE = {
+    "Aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Small sap-sucking pests."},
+    "Armyworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Highly destructive crop larvae."},
+    "Beetle": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native ecological species."},
+    "Bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Cotton and corn pest."},
+    "Grasshopper": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native herbivore."},
+    "Mites": {"status": "Invasive", "color": "#FF4B4B", "desc": "Plant-damaging arachnids."},
+    "Mosquito": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native nuisance insect."},
+    "Sawfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native defoliator."},
+    "Stem Borer": {"status": "Invasive", "color": "#FF4B4B", "desc": "Internal plant tissue feeder."}
+}
+
 # ── Initialize Session State ───────────────────────────────
 if "inventory" not in st.session_state:
     st.session_state.inventory = {}
@@ -41,7 +54,7 @@ st.markdown(f"""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap');
     [data-testid="stHeader"], header, footer {{ visibility: hidden; display: none; }}
     .main, [data-testid="stAppViewContainer"] {{ background: {BG_GRADIENT} !important; font-family: 'Inter', sans-serif !important; }}
-    .bento-card {{ background: {CARD_BG}; backdrop-filter: blur(12px); border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; transition: all 0.3s ease; }}
+    .bento-card {{ background: {CARD_BG}; backdrop-filter: blur(12px); border: 1px solid {BORDER}; border-radius: 24px; padding: 24px; margin-bottom: 20px; }}
     .eyebrow {{ text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; font-weight: 800; color: {ACCENT}; margin-bottom: 12px; }}
     .stButton > button {{ border-radius: 14px !important; background-color: {SURFACE} !important; color: {TEXT} !important; border: 1px solid {BORDER} !important; }}
     .stMarkdown p, label {{ color: {TEXT} !important; }}
@@ -51,23 +64,17 @@ st.markdown(f"""
 # ── Logic Functions ───────────────────────────────────────
 @st.cache_resource
 def load_model():
-    # NOTE: yolov8n.pt is a general model. Replace with your 'best.pt' for insects!
     return YOLO('exp.pt') 
 
 model = load_model()
 
 def classify(img):
-    """Actual AI Inference Logic"""
     results = model.predict(source=img, conf=0.25, verbose=False)
-    
-    if len(results[0].boxes) > 0:
-        # Get detection with highest confidence
-        top_box = results[0].boxes[0]
-        class_id = int(top_box.cls[0])
+    if results[0].probs is not None:
+        class_id = int(results[0].probs.top1)
         label = model.names[class_id].replace("_", " ").title()
-        conf = float(top_box.conf[0])
+        conf = float(results[0].probs.top1conf)
         return label, conf
-    
     return "No Specimen Detected", 0.0
 
 def add_to_inventory(label):
@@ -78,8 +85,9 @@ def add_to_inventory(label):
 def send_email_alert(species, count, recipient):
     sender_email = "aniyuva745@gmail.com"
     sender_password = "xkoz kvqr xtjr atio"
+    info = INSECT_DATABASE.get(species, {"status": "Unknown"})
     msg = EmailMessage()
-    msg.set_content(f"ALERT: {species} detected. Population: {count}")
+    msg.set_content(f"ALERT: {species} ({info['status']}) detected. Population: {count}")
     msg['Subject'] = f"⚠️ TSA ALERT: {species} Threshold Reached"
     msg['From'], msg['To'] = sender_email, recipient
     try:
@@ -114,21 +122,27 @@ with col_left:
                 label, conf = classify(img)
                 st.session_state.insect_res = (label, conf)
                 add_to_inventory(label)
-                
-                # Warning if the model doesn't know what a mosquito is
-                if "Mosquito" not in model.names.values() and label == "No Specimen Detected":
-                    st.warning("Note: The current model (yolov8n.pt) does not have 'Mosquito' in its dataset. It only sees common objects like birds or dogs.")
 
 with col_right:
     st.markdown('<p class="eyebrow">Detection Metrics</p>', unsafe_allow_html=True)
     label, conf = st.session_state.insect_res
+    info = INSECT_DATABASE.get(label, {"status": "Unknown", "color": ACCENT, "desc": ""})
+    
     st.markdown(f"""
-        <div class="bento-card" style="border-left: 5px solid {ACCENT};">
-            <p class="eyebrow" style="color:{TEXT_DIM}">Identified Insect</p>
-            <div style="font-family:'Playfair Display'; font-size: 2.5rem; color:{TEXT};">{label}</div>
-            <div style="display:flex; justify-content:space-between; margin-top:15px;">
-                <span style="color:{TEXT_DIM};">Confidence</span>
-                <span style="color:{ACCENT}; font-weight:800;">{conf:.1%}</span>
+        <div class="bento-card" style="border-left: 5px solid {info['color']};">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <p class="eyebrow" style="color:{TEXT_DIM}">Identified Insect</p>
+                    <div style="font-family:'Playfair Display'; font-size: 2.5rem; color:{TEXT}; line-height:1.1;">{label}</div>
+                </div>
+                <div style="background:{info['color']}22; color:{info['color']}; padding:4px 10px; border-radius:8px; font-size:0.7rem; font-weight:800; border:1px solid {info['color']};">
+                    {info['status'].upper()}
+                </div>
+            </div>
+            <p style="color:{TEXT_DIM}; font-size:0.8rem; margin-top:10px;">{info['desc']}</p>
+            <div style="display:flex; justify-content:space-between; margin-top:20px; align-items:center;">
+                <span style="color:{TEXT_DIM}; font-size:0.85rem; font-weight:600;">Confidence</span>
+                <span style="color:{ACCENT}; font-weight:800; font-size:1.2rem;">{conf:.1%}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -138,14 +152,24 @@ with col_right:
         if not st.session_state.inventory:
             st.write("No specimens logged.")
         for species, count in st.session_state.inventory.items():
-            st.write(f"**{species}**: {count}")
+            s_info = INSECT_DATABASE.get(species, {"color": TEXT})
+            st.markdown(f"<p style='margin:0;'><b>{species}</b>: <span style='color:{s_info['color']};'>{count}</span></p>", unsafe_allow_html=True)
 
-    # Email Logic
-    threshold = st.sidebar.slider("Alert Threshold", 1, 20, 5)
-    target_email = st.sidebar.text_input("Alert Email", "agiridhar41@gmail.com")
-    
-    for species, count in st.session_state.inventory.items():
-        if count >= threshold and species not in st.session_state.emails_sent:
+    # ── SYSTEM CONFIGS ──
+    st.markdown('<p class="eyebrow" style="margin-top:20px;">System Configs</p>', unsafe_allow_html=True)
+    with st.expander("Configuration Settings"):
+        target_email = st.text_input("Alert Destination", value="agiridhar41@gmail.com")
+        threshold = st.slider("Population Alert Threshold", 1, 50, 5)
+        
+        if st.button("Reset Session Data", use_container_width=True):
+            st.session_state.inventory = {}
+            st.session_state.emails_sent = []
+            st.rerun()
+
+# ── Email Automation Trigger ────────────────────────────────
+for species, count in st.session_state.inventory.items():
+    if count >= threshold and species not in st.session_state.emails_sent:
+        if INSECT_DATABASE.get(species, {}).get("status") == "Invasive":
             if send_email_alert(species, count, target_email):
                 st.session_state.emails_sent.append(species)
-                st.sidebar.success(f"Email sent for {species}!")
+                st.success(f"📧 Alert Sent for {species}!")
