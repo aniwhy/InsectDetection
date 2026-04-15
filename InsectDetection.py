@@ -243,7 +243,7 @@ with col_left:
 
 with col_right:
     st.markdown('<p class="eyebrow">Detection Analysis</p>', unsafe_allow_html=True)
-    st.markdown('<p class="eyebrow">(For best results, taoke pictures 3-5 inches away from the insect)</p>', unsafe_allow_html=True)
+    st.markdown('font-size:0.7rem; <p class="eyebrow">(For best results, take pictures 3-5 inches away from the insect)</p>', unsafe_allow_html=True)
     label, conf = st.session_state.insect_res
     info = INSECT_DATABASE.get(label, {"status": "Unknown", "color": ACCENT, "desc": "Awaiting classification..."})
     
