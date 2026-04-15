@@ -14,16 +14,23 @@ st.set_page_config(
 )
 
 # ── Invasive Status Database ──────────────────────────────
+# Updated with all classes from largedata.pt
 INSECT_DATABASE = {
-    "Aphids": {"status": "Invasive", "color": "#FF4B4B", "desc": "Small sap-sucking pests."},
+    "Ant": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native forest and garden occupant."},
+    "Aphid": {"status": "Invasive", "color": "#FF4B4B", "desc": "Small sap-sucking pests that damage crops."},
     "Armyworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Highly destructive crop larvae."},
+    "Bee": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Essential native pollinator."},
     "Beetle": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native ecological species."},
-    "Bollworm": {"status": "Invasive", "color": "#FF4B4B", "desc": "Cotton and corn pest."},
+    "Borer": {"status": "Invasive", "color": "#FF4B4B", "desc": "Internal plant tissue feeder."},
+    "Butterfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native pollinator and indicator species."},
+    "Dragonfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native predator of smaller insects."},
+    "Fly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native insect species."},
     "Grasshopper": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native herbivore."},
-    "Mites": {"status": "Invasive", "color": "#FF4B4B", "desc": "Plant-damaging arachnids."},
+    "Ladybug": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Beneficial native predator of aphids."},
+    "Lantern Fly": {"status": "Invasive", "color": "#FF4B4B", "desc": "Highly invasive planthopper damaging to trees."},
     "Mosquito": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native nuisance insect."},
-    "Sawfly": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Common native defoliator."},
-    "Stem Borer": {"status": "Invasive", "color": "#FF4B4B", "desc": "Internal plant tissue feeder."}
+    "Spider": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native arachnid predator."},
+    "Wasp": {"status": "Non-Invasive", "color": "#4CAF50", "desc": "Native predator and occasional pollinator."}
 }
 
 # ── Initialize Session State ───────────────────────────────
@@ -141,7 +148,7 @@ st.markdown(f"""
 # ── Logic Functions ───────────────────────────────────────
 @st.cache_resource
 def load_model():
-    return YOLO('exp.pt') 
+    return YOLO('largedata.pt') 
 
 model = load_model()
 
@@ -180,7 +187,6 @@ def add_to_inventory(label):
         count = st.session_state.inventory[label]
         is_invasive = INSECT_DATABASE.get(label, {}).get("status") == "Invasive"
         
-        # Pull values from session state to avoid NameErrors when widgets are defined below
         mail = st.session_state.get("target_email", "agiridhar41@gmail.com")
         thresh = st.session_state.get("threshold", 5)
         
@@ -268,10 +274,9 @@ with col_right:
         """, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # ── Configuration Settings Section (AT THE BOTTOM AS REQUESTED) ──
+    # ── Configuration Settings Section ──
     st.markdown('<p class="eyebrow">System Configuration</p>', unsafe_allow_html=True)
     with st.expander("Adjust Parameters", expanded=True):
-        # We assign these to session_state so the top functions can see them even though they are defined late
         st.text_input("Alert Recipient", value="agiridhar41@gmail.com", key="target_email")
         st.slider("Alert Threshold (Pop.)", 1, 50, 5, key="threshold")
         
