@@ -187,7 +187,7 @@ def add_to_inventory(label):
         count = st.session_state.inventory[label]
         is_invasive = INSECT_DATABASE.get(label, {}).get("status") == "Invasive"
         
-        mail = st.session_state.get("target_email", "agiridhar41@gmail.com")
+        mail = st.session_state.get("target_email", "ani.yuva.2010@gmail.com")
         thresh = st.session_state.get("threshold", 5)
         
         if is_invasive and count >= thresh and label not in st.session_state.emails_sent:
