@@ -171,7 +171,7 @@ def send_email_alert(species, count, receiver_email):
         return False
 
 def classify(img):
-    results = model.predict(source=img, conf=0.5, verbose=False)
+    results = model.predict(source=img, conf=0.6, verbose=False)
     if results[0].probs is not None:
         class_id = int(results[0].probs.top1)
         label = model.names[class_id].replace("_", " ").title()
